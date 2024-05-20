@@ -343,6 +343,7 @@ void wm_wifi_scan_task(void *pvParameters)
 		wifi_app_wifi_scan_t *wifi_scan_list = init_wifi_app_wifi_scan_t();
 		wm_wifi_scan(wifi_scan_list);
 		
+		
 
 	}
 }
