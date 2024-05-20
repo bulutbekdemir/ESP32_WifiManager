@@ -137,7 +137,7 @@ void wm_wifi_connect_task(void *pvParameters)
 	while (1)
 	{
 		uxBits = xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT | WM_EVENTG_WIFI_CONNECTED | WM_EVENTG_WIFI_CONNECT_FAIL, 
-																pdTRUE, pdFALSE, portMAX_DELAY);
+																pdFALSE, pdFALSE, portMAX_DELAY); 
 		
 		xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
 
@@ -189,7 +189,10 @@ void wm_wifi_connect_task(void *pvParameters)
 			}
 			
 		}
-		
+		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
+		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT);
+		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECTED);
+		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
 	}
 }
 
@@ -340,10 +343,12 @@ void wm_wifi_scan_task(void *pvParameters)
 	{
 		xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_START, pdTRUE, pdFALSE, portMAX_DELAY);
 		xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
-		wifi_app_wifi_scan_t *wifi_scan_list = init_wifi_app_wifi_scan_t();
-		wm_wifi_scan(wifi_scan_list);
-		
-		
+		wifi_app_wifi_scan_t *wifi_scan_list = wifi_app_wifi_scan_t_init();
+		wm_wifi_scan(&wifi_scan_list);
+		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
+		xQueueSend(wm_queue_wifi_scan_handle, &wifi_scan_list, portMAX_DELAY);
+		wifi_app_scan_t_deinit(wifi_scan_list);
+		xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_RESULT_SENT, pdTRUE, pdFALSE, portMAX_DELAY);
 
 	}
 }
@@ -358,7 +363,7 @@ static void wm_wifi_scan(wifi_app_wifi_scan_t *wifi_scan_list)
 {
 	esp_err_t ret = ESP_FAIL;
 
-	retain_wifi_app_wifi_scan_t(wifi_scan_list);
+	wifi_app_wifi_scan_t_retain(wifi_scan_list);
 	wifi_scan_list->ap_count = MAX_SCAN_LIST_SIZE;
 
 	ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
@@ -366,20 +371,64 @@ static void wm_wifi_scan(wifi_app_wifi_scan_t *wifi_scan_list)
 	ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records((uint16_t *) &(*wifi_scan_list).ap_count, (*wifi_scan_list).ap_records));
 	
 	xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_DONE, pdTRUE, pdFALSE, portMAX_DELAY);
+	wifi_app_wifi_scan_release(wifi_scan_list);
 }
 
 /*!
 * @brief Wifi Queue Send Message function
 * @note This function sends the wifi config message to the wifi config queue.
 *
-* @param wifi_config_msg Wifi config message
+* @param wifi_config Wifi config message
 * @return BaseType_t Returns pdPASS if the message is sent successfully otherwise pdFAIL
 */
-BaseType_t wm_wifi_send_message(wm_queue_wifi_config_t *wifi_config)
+BaseType_t wm_wifi_send_message(wifi_config_t *wifi_config)
 {
     wm_queue_wifi_config_t wifi_config_msg;
     wifi_config_msg.wifi_config = *wifi_config; 
 
     // Send the message to the queue
     return xQueueSend(wm_queue_wifi_config_handle, &wifi_config_msg, portMAX_DELAY);
+}
+
+/*!
+* @brief Wifi Queue Receive Message function
+* @note This function receives the wifi config message from the wifi config queue.
+*
+* @param wifi_config Wifi config 
+* @return BaseType_t Returns pdPASS if the message is received successfully otherwise pdFAIL
+*/
+BaseType_t wm_wifi_receive_message(wifi_config_t *wifi_config)
+{
+		wm_queue_wifi_config_t wifi_config_msg;
+		// Receive the message from the queue
+		BaseType_t xStatus = xQueueReceive(wm_queue_wifi_config_handle, &wifi_config_msg, portMAX_DELAY);
+		*wifi_config_params = wifi_config_msg.wifi_config;
+
+		return xStatus;
+}
+
+/*!
+* @brief Wifi Queue Send Scan function
+* @note This function sends the wifi scan message to the wifi scan queue.
+*
+* @param wifi_scan_msg Wifi scan message
+* @return BaseType_t Returns pdPASS if the message is sent successfully otherwise pdFAIL
+*/
+BaseType_t wm_wifi_send_scan_message(wifi_app_wifi_scan_t *wifi_scan_msg);
+{
+	// Send the message to the queue
+	return xQueueSend(wm_queue_wifi_scan_handle, &wifi_scan_msg, portMAX_DELAY);
+}
+
+/*!
+* @brief Wifi Queue Receive Scan function
+* @note This function receives the wifi scan message from the wifi scan queue.
+*
+* @param wifi_scan_msg Wifi scan message
+* @return BaseType_t Returns pdPASS if the message is received successfully otherwise pdFAIL
+*/
+BaseType_t wm_wifi_receive_scan_message(wifi_app_wifi_scan_t *wifi_scan_msg);
+{
+	// Receive the message from the queue
+	return xQueueReceive(wm_queue_wifi_scan_handle, &wifi_scan_msg, portMAX_DELAY);
 }

@@ -59,7 +59,7 @@ typedef struct {
 */
 INIT_FUNC(wifi_app_wifi_scan_t);
 DEINIT_FUNC(wifi_app_wifi_scan_t);
-RETAIN_FUNC(wifi_app_wifi_scan_t);
+RETAIN_FUNC(wifi_app_wifi_scan_t); ///! TODO: Delete when release version is ready 
 RELEASE_FUNC(wifi_app_wifi_scan_t);
 
 /*!
@@ -111,7 +111,24 @@ void wm_wifi_scan_task(void *pvParameters);
  * @brief Send Message to Wifi Config Queue
  * 
  */
-BaseType_t wm_wifi_send_message(wifi_config_t *wifi_config);
+BaseType_t wm_wifi_send_message(wifi_config_t *wifi_config)
 
+/*!
+ * @brief Receive Message from Wifi Config Queue
+ * 
+ */
+BaseType_t wm_wifi_receive_message(wifi_config_t *wifi_config)
+
+/*!
+ * @brief Send Message to Wifi Scan Queue
+ * 
+ */
+BaseType_t wm_wifi_send_scan_message(wifi_app_wifi_scan_t *wifi_scan_msg);
+
+/*!
+ * @brief Receive Message from Wifi Scan Queue
+ * 
+ */
+BaseType_t wm_wifi_receive_scan_message(wifi_app_wifi_scan_t *wifi_scan_msg);
 
 #endif /* WIFI_APP_H_ */

@@ -7,8 +7,33 @@
 * @copyright BSD 3-Clause License
 * @version 0.1.1 @link https://semver.org/ (Semantic Versioning)
 */
+#include "wm_generalMacros.h"
+#include "wifiManager_private.h"
+#include "wm_httpServer.h"
+#include "wm_wifi.h"
 
+static const char *TAG = "WM_HTTP_SERVER";
 
+///> Declare the 503 response function
+static void httpd_resp_send_503(httpd_req_t *req);
+
+///> Embedded binary data for index.html, app.css, app.js, jquery-3.3.1.min.js and favicon.ico
+extern const uint8_t index_html_start[] asm("_binary_index_html_start");
+extern const uint8_t index_html_end[] asm("_binary_index_html_end");
+extern const uint8_t scan_css_start[] asm("_binary_scan_css_start");
+extern const uint8_t scan_css_end[] asm("_binary_scan_css_end");
+extern const uint8_t app_js_start[] asm("_binary_app_js_start");
+extern const uint8_t app_js_end[] asm("_binary_app_js_end");
+extern const uint8_t password_html_start[] asm("_binary_password_html_start");
+extern const uint8_t password_html_end[] asm("_binary_password_html_end");
+extern const uint8_t password_css_start[] asm("_binary_password_css_start");
+extern const uint8_t password_css_end[] asm("_binary_password_css_end");
+extern const uint8_t password_js_start[] asm("_binary_password_js_start");
+extern const uint8_t password_js_end[] asm("_binary_password_js_end");
+extern const uint8_t jquery_3_3_1_min_js_start[] asm("_binary_jquery_3_3_1_min_js_start");
+extern const uint8_t jquery_3_3_1_min_js_end[] asm("_binary_jquery_3_3_1_min_js_end");
+extern const uint8_t favicon_ico_start[] asm("_binary_favicon_ico_start");
+extern const uint8_t favicon_ico_end[] asm("_binary_favicon_ico_end");
 
 /*!
 * @brief HTTP Server Index Handler
@@ -116,41 +141,48 @@ static esp_err_t http_server_favicon_handler(httpd_req_t *req)
 static esp_err_t http_server_wifi_connect_json_handler(httpd_req_t *req)
 {
 	ESP_LOGI(TAG, "Wifi Connect JSON Handler");
-
-	size_t lenSSID = 0, lenPassword = 0;
-	char *ssid = NULL, *password = NULL;
-
-	///> Get SSID header
-	lenSSID = httpd_req_get_hdr_value_len(req, "ConnectSSID") + 1;
-	if(lenSSID > 1)
+	if(!(xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_BLOCK_REQ) || !(xEventGroupGetBits(wm_wifi_event_group) & WM_EVENTG_WIFI_CONNECTED))
 	{
-		ssid = malloc(lenSSID);
-		if(httpd_req_get_hdr_value_str(req, "ConnectSSID", ssid, lenSSID) == ESP_OK)
-		{
-			ESP_LOGI(TAG, "SSID: %s", ssid);
-		}
-	}
+		size_t lenSSID = 0, lenPassword = 0;
+		char *ssid = NULL, *password = NULL;
 
-	///> Get Password header
-	lenPassword = httpd_req_get_hdr_value_len(req, "ConnectPassword") + 1;
-	if(lenPassword > 1)
+		///> Get SSID header
+		lenSSID = httpd_req_get_hdr_value_len(req, "ConnectSSID") + 1;
+		if(lenSSID > 1)
+		{
+			ssid = malloc(lenSSID);
+			if(httpd_req_get_hdr_value_str(req, "ConnectSSID", ssid, lenSSID) == ESP_OK)
+			{
+				ESP_LOGI(TAG, "SSID: %s", ssid);
+			}
+		}
+
+		///> Get Password header
+		lenPassword = httpd_req_get_hdr_value_len(req, "ConnectPassword") + 1;
+		if(lenPassword > 1)
+		{
+			password = malloc(lenPassword);
+			if(httpd_req_get_hdr_value_str(req, "ConnectPassword", password, lenPassword) == ESP_OK)
+			{
+				ESP_LOGI(TAG, "Password: %s", password);
+			}
+		}
+
+		wifi_config_t* wifi_config = malloc(sizeof(wifi_config_t));
+		memset(wifi_config, 0, sizeof(wifi_config_t));
+		memcpy(wifi_config->sta.ssid, ssid, lenSSID);
+		memcpy(wifi_config->sta.password, password, lenPassword);
+
+		wm_wifi_send_message(wifi_config);
+
+		xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT);
+
+		free(ssid);
+		free(password);
+	}else 
 	{
-		password = malloc(lenPassword);
-		if(httpd_req_get_hdr_value_str(req, "ConnectPassword", password, lenPassword) == ESP_OK)
-		{
-			ESP_LOGI(TAG, "Password: %s", password);
-		}
+		httpd_resp_send_503(req);
 	}
-
-	wifi_config_t* wifi_config = wifi_app_get_wifi_config();
-	memset(wifi_config, 0, sizeof(wifi_config_t));
-	memcpy(wifi_config->sta.ssid, ssid, lenSSID);
-	memcpy(wifi_config->sta.password, password, lenPassword);
-	wifi_app_send_message(WIFI_APP_MSG_CONNECTING_FROM_HTTP_SERVER);
-
-	free(ssid);
-	free(password);
-
 	return ESP_OK;
 }
 
@@ -163,32 +195,9 @@ static esp_err_t http_server_wifi_connect_json_handler(httpd_req_t *req)
 static esp_err_t http_server_wifi_status_json_handler(httpd_req_t *req)
 {
 	char wifiJSON[100];
-	sprintf(wifiJSON, "{\"status\":%d}", g_wifi_connect_status);
+	sprintf(wifiJSON, "{\"status\":%d}", (xEventGroupGetBits(wm_wifi_event_group) & WM_EVENTG_WIFI_CONNECTED ? 1 : 0));
 	httpd_resp_set_type(req, "application/json");
 	httpd_resp_send(req, wifiJSON, strlen(wifiJSON));
-	return ESP_OK;
-}
-
-/*!
-* @brief HTTP Server Wifi Scan Result JSON Handler
-* @note Responses with the Wifi Scan Result
-*	@param req HTTP request
-* @return ESP_OK
-*/
-static esp_err_t http_server_wifi_scan_result_json_handler(httpd_req_t *req)
-{
-	http_server_send_message(HTTP_SERVER_MSG_WIFI_SCAN_START);
-	while(true){
-		if(g_wifi_connect_status == HTTP_SERVER_MSG_WIFI_SCAN_RESPONSE_GET)
-		{
-			char wifiScanJSON[100];
-			sprintf(wifiScanJSON, "{\"status\":%d, \"ap_count\":%d}", g_wifi_connect_status, wifi_scan->ap_count);
-			httpd_resp_set_type(req, "application/json");
-			httpd_resp_send(req, wifiScanJSON, strlen(wifiScanJSON));
-			break;
-		}
-		vTaskDelay(5000 / portTICK_PERIOD_MS);
-	}
 	return ESP_OK;
 }
 
@@ -200,24 +209,44 @@ static esp_err_t http_server_wifi_scan_result_json_handler(httpd_req_t *req)
 */
 static esp_err_t http_server_wifi_scan_result_list_json_handler(httpd_req_t *req)
 {
-	char wifiScanJSON[1000];
-	sprintf(wifiScanJSON, "{\"status\":%d, \"ap_count\":%d, \"ap_records\":[", g_wifi_connect_status, wifi_scan->ap_count);
-	for(int i = 0; i < wifi_scan->ap_count; i++)
+	if(!(xEventGetGroupBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_BLOCK_REQ))
 	{
-		char temp[100];
-		sprintf(temp, "{\"ssid\":\"%s\", \"rssi\":%d, \"authmode\":%d}", wifi_scan->ap_records[i].ssid, wifi_scan->ap_records[i].rssi, wifi_scan->ap_records[i].authmode);
-		strcat(wifiScanJSON, temp);
-		if(i < wifi_scan->ap_count - 1)
+		xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_START);
+		wifi_app_wifi_scan_t* wifi_scan = wifi_app_wifi_scan_t_init();
+		wm_wifi_receive_scan_message(&wifi_scan);
+		char wifiScanJSON[1000];
+		sprintf(wifiScanJSON, "{\"ap_count\":%d, \"ap_records\":[", wifi_scan->ap_count);
+		for(int i = 0; i < wifi_scan->ap_count; i++)
 		{
-			strcat(wifiScanJSON, ",");
+			char temp[100];
+			sprintf(temp, "{\"ssid\":\"%s\", \"rssi\":%d, \"authmode\":%d}", wifi_scan->ap_records[i].ssid, wifi_scan->ap_records[i].rssi, wifi_scan->ap_records[i].authmode);
+			strcat(wifiScanJSON, temp);
+			if(i < wifi_scan->ap_count - 1)
+			{
+				strcat(wifiScanJSON, ",");
+			}
 		}
-	}
-	strcat(wifiScanJSON, "]}");
-	httpd_resp_set_type(req, "application/json");
-	httpd_resp_send(req, wifiScanJSON, strlen(wifiScanJSON));
-	
-	return ESP_OK;
+		strcat(wifiScanJSON, "]}");
+		httpd_resp_set_type(req, "application/json");
+		httpd_resp_send(req, wifiScanJSON, strlen(wifiScanJSON));
+
+		wifi_app_wifi_scan_t_deinit(wifi_scan);
+		xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_DONE);		
+	}/* IDK if this is necessary or the right way to do it
+	else if ((xEventGetGroupBits(wm_wifi_event_group) & WM_EVENTG_WIFI_CONNECTED))
+	{
+		httpd_resp_send_503(req); //Connection is established, do not allow scan
+	}else if(!(xEventGetGroupBits(wm_nvs_event_group) & WM_EVENTG_NVS_DONE)) 
+	{
+		httpd_resp_send_503(req); //NVS is not done, do not allow scan
+	}*/
+	 else
+	{
+		httpd_resp_send_503(req); //Default 404
+	}	
+		return ESP_OK;
 }
+
 
 /*!
  * @brief HTTP Server Configuration
@@ -230,13 +259,7 @@ static httpd_handle_t http_server_configure(void)
 	//Generate default configuration
 	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 
-	///> Create the HTTP Server Monitor Task
-	xTaskCreatePinnedToCore(&http_server_monitor_task, "http_server_monitor_task", HTTP_SERVER_MONITOR_TASK_STACK_SIZE, NULL, \
-												HTTP_SERVER_MONITOR_TASK_PRIORITY, &http_server_monitor_task_handle, HTTP_SERVER_MONITOR_CORE_ID);
-	///> Create the HTTP Server Monitor Queue 
-	http_server_monitor_queue_handle = xQueueCreate(3, sizeof(http_server_queue_message_t));
-
-	config.core_id = HTTP_SERVER_CORE_ID;
+	config.core_id = HTTP_SERVER_TASK_CORE_ID;
 	config.task_priority = HTTP_SERVER_TASK_PRIORITY;
 	config.stack_size = HTTP_SERVER_TASK_STACK_SIZE;
 
@@ -247,7 +270,7 @@ static httpd_handle_t http_server_configure(void)
 	ESP_LOGI(TAG, "Starting HTTP Server on port: '%d' with task priority: '%d'", config.server_port, config.task_priority);
 
 	///> Start the httpd server
-	if(httpd_start(&http_server_handle, &config) == ESP_OK)
+	if(httpd_start(&wm_http_server_task_handle, &config) == ESP_OK)
 	{
 		///> Register URI handlers
 		httpd_uri_t index_uri = {
@@ -338,25 +361,44 @@ static httpd_handle_t http_server_configure(void)
 			.user_ctx = NULL
 		};
 
-		///> Register the URI handlers
-		httpd_register_uri_handler(http_server_handle, &index_uri);
-		httpd_register_uri_handler(http_server_handle, &app_css_uri);
-		httpd_register_uri_handler(http_server_handle, &app_js_uri);
-		httpd_register_uri_handler(http_server_handle, &password_html_uri);
-		httpd_register_uri_handler(http_server_handle, &password_css_uri);
-		httpd_register_uri_handler(http_server_handle, &password_js_uri);
-		httpd_register_uri_handler(http_server_handle, &jquery_uri);
-		httpd_register_uri_handler(http_server_handle, &favicon_uri);
-		///> Register the URI handlers for Wifi Connect
-		httpd_register_uri_handler(http_server_handle, &wifi_connect_json);
-		httpd_register_uri_handler(http_server_handle, &wifi_connect_status_json);
-		///> Register the URI handlers for Wifi Scan
-		httpd_register_uri_handler(http_server_handle, &wifi_scan_result_json);
-		httpd_register_uri_handler(http_server_handle, &wifi_scan_result_list_json);
+		///>Timeout Handler for all URIs
+		httpd_register_err_handler(wm_http_server_task_handle, HTTPD_404_NOT_FOUND, NULL);
 
-		return http_server_handle;
+		///> Register the URI handlers
+		httpd_register_uri_handler(wm_http_server_task_handle, &index_uri);
+		httpd_register_uri_handler(wm_http_server_task_handle, &app_css_uri);
+		httpd_register_uri_handler(wm_http_server_task_handle, &app_js_uri);
+		httpd_register_uri_handler(wm_http_server_task_handle, &password_html_uri);
+		httpd_register_uri_handler(wm_http_server_task_handle, &password_css_uri);
+		httpd_register_uri_handler(wm_http_server_task_handle, &password_js_uri);
+		httpd_register_uri_handler(wm_http_server_task_handle, &jquery_uri);
+		httpd_register_uri_handler(wm_http_server_task_handle, &favicon_uri);
+		///> Register the URI handlers for Wifi Connect
+		httpd_register_uri_handler(wm_http_server_task_handle, &wifi_connect_json);
+		httpd_register_uri_handler(wm_http_server_task_handle, &wifi_connect_status_json);
+		///> Register the URI handlers for Wifi Scan
+		httpd_register_uri_handler(wm_http_server_task_handle, &wifi_scan_result_json);
+		httpd_register_uri_handler(wm_http_server_task_handle, &wifi_scan_result_list_json);
+
+		return wm_http_server_task_handle;
 	}
 	return NULL; //Only returns if failed to start the server
+}
+
+/*!
+* @brief HTTP Server 503 Response
+* @note Sends 503 Service Unavailable response
+*
+*/
+static void httpd_resp_send_503(httpd_req_t *req)
+{
+    // Respond with 503 Service Unavailable
+    httpd_resp_set_status(req, "503 Service Unavailable");
+    httpd_resp_set_type(req, "text/plain");
+    httpd_resp_set_hdr(req, "Retry-After", "10"); // Client should retry after 10 seconds
+
+    const char *resp_str = "Service temporarily unavailable. Please try again later.";
+    httpd_resp_send(req, resp_str, strlen(resp_str));
 }
 
 /*!
@@ -365,9 +407,9 @@ static httpd_handle_t http_server_configure(void)
  */
 void http_server_init(void)	
 {
-	if(http_server_handle == NULL)
+	if(wm_http_server_task_handle == NULL)
 	{
-		http_server_handle = http_server_configure();
+		wm_http_server_task_handle = http_server_configure();
 	}
 }
 
@@ -376,14 +418,9 @@ void http_server_init(void)
 */
 void http_server_stop(void)
 {
-	if(http_server_handle != NULL)
+	if(wm_http_server_task_handle != NULL)
 	{
-		httpd_stop(http_server_handle);
-		http_server_handle = NULL;
-	}
-	if(http_server_monitor_task_handle != NULL)
-	{
-		vTaskDelete(http_server_monitor_task_handle);
-		http_server_monitor_task_handle = NULL;
+		httpd_stop(wm_http_server_task_handle);
+		wm_http_server_task_handle = NULL;
 	}
 }
