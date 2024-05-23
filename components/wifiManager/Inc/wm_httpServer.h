@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.1.1 @link https://semver.org/ (Semantic Versioning)
+* @version 0.1.0-prerelase.1
 */
 #ifndef WM_HTTPSERVER_H_
 #define WM_HTTPSERVER_H_

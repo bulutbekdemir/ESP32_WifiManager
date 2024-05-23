@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.1.1 @link https://semver.org/ (Semantic Versioning)
+* @version 0.1.0-prerelase.3
 */
 #include "wm_generalMacros.h"
 #include "wifiManager_private.h"

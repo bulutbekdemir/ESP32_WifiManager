@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.0.1 @link https://semver.org/ (Semantic Versioning)
+* @version 0.1.0-prerelase.1
 */
 #ifndef __WIFI_MANAGER_PRIVATE_H__
 #define __WIFI_MANAGER_PRIVATE_H__

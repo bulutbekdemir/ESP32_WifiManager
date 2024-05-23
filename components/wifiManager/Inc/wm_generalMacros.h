@@ -25,7 +25,7 @@
 *    MyStruct_deinit(ptr);
 *
 * @copyright BSD 3-Clause License
-* @version 0.1.0 @link https://semver.org/ (Semantic Versioning)
+* @version 1.0.0
 */
 
 #ifndef GENERALMACROS_H
