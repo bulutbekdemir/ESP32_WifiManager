@@ -421,16 +421,16 @@ BaseType_t http_server_init(void)
 		if(wm_http_server_task_handle == NULL) 
 		{
 			ESP_LOGE(TAG, "Failed to start HTTP Server");
-			return ESP_FAIL;
+			return pdFAIL;
 		}
 		else
 		{
 			ESP_LOGI(TAG, "HTTP Server started successfully");
-			return ESP_OK;
+			return pdTRUE;
 		}
 	}
 	ESP_LOGW(TAG, "HTTP Server is already started");
-	return ESP_FAIL;
+	return pdFAIL;
 }
 
 /*!
