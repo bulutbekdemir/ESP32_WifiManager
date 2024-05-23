@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.1.0-prerelase.1
+* @version 0.2.0-prerelase.5
 */
 #ifndef __WIFI_MANAGER_PRIVATE_H__
 #define __WIFI_MANAGER_PRIVATE_H__
@@ -57,10 +57,12 @@
 typedef enum 
 {
 	WM_EVENTG_MAIN_CLOSE_SERVER_AND_AP = 1 << 0,     /*!< Flag for Wifi AP and HTTP Server Close Task Trigger */
-	WM_EVENTG_MAIN_AP_CLOSED = 1 << 1,    /*!< Flag for Wifi AP Closed */
-	WM_EVENTG_MAIN_HTTP_OPEN = 1 << 2,    /*!< Flag for HTTP Server Open */
-	WM_EVENTG_MAIN_HTTP_CLOSED = 1 << 3,   /*!< Flag for HTTP Server Closed */
-	WM_EVENTG_MAIN_HTTP_BLOCK_REQ = 1 << 4, /*!< Flag for HTTP Server Block Request */
+	WM_EVENTG_MAIN_AP_OPEN = 1 << 1,    /*!< Flag for Wifi AP Open */
+	WM_EVENTG_MAIN_AP_CLOSED = 1 << 2,    /*!< Flag for Wifi AP Closed */
+	WM_EVENTG_MAIN_HTTP_OPEN = 1 << 3,    /*!< Flag for HTTP Server Open */
+	WM_EVENTG_MAIN_HTTP_CLOSED = 1 << 4,   /*!< Flag for HTTP Server Closed */
+	WM_EVENTG_MAIN_SCAN_TASK_OPEN = 1 << 5, /*!< Flag for Start Task Sequencer Scan Task Open */
+	WM_EVENTG_MAIN_HTTP_BLOCK_REQ = 1 << 6, /*!< Flag for HTTP Server Block Request */
 } wm_main_event_group_e; /*!< Wifi Manager Main Event Group Enum */
 
 /*!
@@ -113,31 +115,22 @@ typedef enum
 */
 EventGroupHandle_t wm_nvs_event_group; /*!< Event Group Handle */
 
-
 /*!
-* @brief Wifi Manager HTTP REQ Event Loop Event Base Declaration
-*/
-ESP_EVENT_DEFINE_BASE(WM_HTTP_REQ_EVENT);
-
-/*!
-* @brief Wifi Manager HTTP REQ Event Loop Events
+* @brief Wifi Manager Close Task Squencer Event Group
 *
-* This enum defines the flags for the Wifi Manager HTTP REQ Event Loop Events.
+* This enum defines the flags for the Wifi Manager Close Task Squencer Event Group.
 */
-enum 
+typedef enum
 {
-	WM_EVENT_HTTP_REQ_WIFI_SCAN_RESULTS,
-	WM_EVENT_HTTP_REQ_LIST_OF_SCANNED_NETWORKS, 
-	WM_EVENT_HTTP_REQ_WIFI_CONNECT,
-	WM_EVENT_HTTP_REQ_WIFI_DISCONNECT, /*! @warning: NOT IMPLEMENTED YET */
-	WM_EVENT_HTTP_REQ_WIFI_CONNECT_STATUS, 
-} wm_http_req_event_group_e; /*!< Wifi Manager HTTP REQ Event Loop Events Enum */
+	WM_EVENTG_CLOSE_TASK_SQUENCER = 1 << 0, /*!< Flag for Close Task Squencer */
+	WM_EVENTG_CLOSE_TASK_SQUENCER_DONE = 1 << 1, /*!< Flag for Close Task Squencer Done */
+} wm_close_task_squencer_event_group_e; /*!< Wifi Manager Close Task Squencer Event Group Enum */
 
 /*!
-* @brief Wifi Manager HTTP REQ Event Loop Handler
+* @brief Wifi Manager Close Task Squencer Event Group Handler
 *
 */
-esp_event_loop_handle_t wm_http_req_event_loop_handle; /*!< Wifi Manager HTTP REQ Event Loop Handle */
+EventGroupHandle_t wm_close_task_squencer_event_group; /*!< Event Group Handle */
 
 /*!
 * @brief Wifi Manager Init Task Handler

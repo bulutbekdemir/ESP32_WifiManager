@@ -92,14 +92,58 @@ static void wm_init_task(void *pvParameters)
 	{
 		/*! Start the HTTP Server and related tasks if the NVS Credentials are not found */
 		ESP_LOGI(TAG, "NVS Credentials Not Found");
-
-		xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_OPEN);
-
+		///>This function causes the APSTA mode to be enabled if HTTP Server is Closed flag is not set
+		xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL); /*!< Set the Wifi Connect Fail Flag */
+		///>Wait for the AP to be opened
+		xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_AP_OPEN, pdTRUE, pdFALSE, portMAX_DELAY);
+		///>Wait for the Scan Task to be opened
+		wm_scan_task_start();
+		xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_SCAN_TASK_OPEN, pdTRUE, pdFALSE, portMAX_DELAY);
+		///>Wait for the HTTP Server to be opened
+		wm_http_server_start();
+		xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_OPEN, pdTRUE, pdFALSE, portMAX_DELAY);
+		
 	}
 	xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_CLOSE_SERVER_AND_AP, pdTRUE, pdFALSE, portMAX_DELAY);
 	xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
-	
+
+	///! TODO : Write the code to close the AP and HTTP Server
+
 	vTaskDelete(NULL);
+}
+
+/*!
+* @brief HTTP Server Start Function
+*
+* This function starts the HTTP server.
+*/
+void wm_http_server_start(void)
+{
+	BaseType_t xReturn = http_server_init();
+	if (xReturn != pdPASS)
+	{
+		ESP_LOGE(TAG, "Failed to start HTTP Server");
+		return;
+	}
+	xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_OPEN);
+}
+
+/*!
+* @brief Task Starter Function
+*
+* This function starts the task.
+*/
+void wm_scan_task_start(void)
+{
+	BaseType_t xReturned = pdFAIL;
+	xReturned = xTaskCreatePinnedToCore(&wm_scan_task, "wm_scan_task", SCAN_TASK_STACK_SIZE, NULL, \
+							SCAN_TASK_PRIORITY, NULL, SCAN_TASK_CORE_ID);
+	if (xReturned != pdPASS)
+	{
+		ESP_LOGE(TAG, "Failed to create Wifi Scan Task");
+		return;
+	}
+	xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_SCAN_TASK_OPEN);
 }
 
 /*!

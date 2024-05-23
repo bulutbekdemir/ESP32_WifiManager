@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.1.0-prerelase.1
+* @version 0.1.1-prerelase.2
 */
 #include "wifiManager_private.h"
 #include "wm_wifi.h"
@@ -186,6 +186,7 @@ void wm_wifi_connect_task(void *pvParameters)
 			{
 				xEventGroupClearBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
 				wm_wifi_connect_apsta();
+				xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_AP_OPEN);
 			}
 			
 		}
@@ -293,7 +294,7 @@ static void wm_wifi_connect_apsta(void)
 	ESP_LOGI(TAG, "AP Netmask: %s", WIFI_AP_IP_NETMASK);
 
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA)); ///> Set the wifi mode to Access Point and Station
-	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &ap_config)); ///> Set the configuration for the Access Point
+	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_ap_config)); ///> Set the configuration for the Access Point
 	ESP_ERROR_CHECK(esp_wifi_set_bandwidth(ESP_IF_WIFI_AP, WIFI_BANDWIDTH)); ///> Set the bandwidth for the Access Point, default is 20Mhz best for low change of interference
 	ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_STA_POWER_SAVE)); ///> Set the power save mode for the wifi, default is NONE
 
