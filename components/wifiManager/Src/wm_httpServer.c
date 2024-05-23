@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.1.1-prerelase.3
+* @version 0.4.1-prerelase.4
 */
 #include "wm_generalMacros.h"
 #include "wifiManager_private.h"
