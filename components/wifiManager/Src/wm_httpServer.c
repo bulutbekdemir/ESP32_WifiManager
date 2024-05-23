@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.4.1-prerelase.4
+* @version 0.4.2-prerelase.5
 */
 #include "wm_generalMacros.h"
 #include "wifiManager_private.h"
@@ -140,11 +140,12 @@ static esp_err_t http_server_favicon_handler(httpd_req_t *req)
 */
 static esp_err_t http_server_wifi_connect_json_handler(httpd_req_t *req)
 {
+	ESP_LOGI(TAG, "Wifi Connect JSON Handler, waiting for semaphore");
 	if(xSemaphoreTake(wm_http_wifi_request_semaphore, portMAX_DELAY) == pdTRUE)
 	{
-		ESP_LOGI(TAG, "Wifi Connect JSON Handler");
 		if(!(xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_BLOCK_REQ) || !(xEventGroupGetBits(wm_wifi_event_group) & WM_EVENTG_WIFI_CONNECTED))
 		{
+			ESP_LOGI(TAG, "Wifi Connect JSON Handler, semaphore taken");
 			size_t lenSSID = 0, lenPassword = 0;
 			char *ssid = NULL, *password = NULL;
 
@@ -185,6 +186,7 @@ static esp_err_t http_server_wifi_connect_json_handler(httpd_req_t *req)
 		{
 			httpd_resp_send_503(req);
 		}
+		xSemaphoreGive(wm_http_wifi_request_semaphore);
 	}
 	return ESP_OK;
 }
@@ -212,10 +214,12 @@ static esp_err_t http_server_wifi_status_json_handler(httpd_req_t *req)
 */
 static esp_err_t http_server_wifi_scan_result_list_json_handler(httpd_req_t *req)
 {
+	ESP_LOGI(TAG, "Wifi Scan Result List JSON Handler, waiting for semaphore");
 	if(xSemaphoreTake(wm_http_wifi_request_semaphore, portMAX_DELAY) == pdTRUE)
 	{
 		if(!(xEventGetGroupBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_BLOCK_REQ))
 		{
+			ESP_LOGI(TAG, "Wifi Scan Result List JSON Handler, semaphore taken");
 			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_START);
 			wifi_app_wifi_scan_t* wifi_scan = wifi_app_wifi_scan_t_init();
 			wm_wifi_receive_scan_message(&wifi_scan);
@@ -236,7 +240,7 @@ static esp_err_t http_server_wifi_scan_result_list_json_handler(httpd_req_t *req
 			httpd_resp_send(req, wifiScanJSON, strlen(wifiScanJSON));
 
 			wifi_app_wifi_scan_t_deinit(wifi_scan);
-			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_DONE);		
+			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_RESULT_SENT);		
 		}/* IDK if this is necessary or the right way to do it
 		else if ((xEventGetGroupBits(wm_wifi_event_group) & WM_EVENTG_WIFI_CONNECTED))
 		{
@@ -249,6 +253,7 @@ static esp_err_t http_server_wifi_scan_result_list_json_handler(httpd_req_t *req
 		{
 			httpd_resp_send_503(req); //Default 404
 		}	
+		xSemaphoreGive(wm_http_wifi_request_semaphore);
 	}
 		return ESP_OK;
 }

@@ -348,7 +348,6 @@ void wm_wifi_scan_task(void *pvParameters)
 		xQueueSend(wm_queue_wifi_scan_handle, &wifi_scan_list, portMAX_DELAY);
 		wifi_app_scan_t_deinit(wifi_scan_list);
 		xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_RESULT_SENT, pdTRUE, pdFALSE, portMAX_DELAY);
-
 	}
 }
 
