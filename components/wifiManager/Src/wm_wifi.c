@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.1.1-prerelase.2
+* @version 0.1.2-prerelase.2
 */
 #include "wifiManager_private.h"
 #include "wm_wifi.h"
@@ -169,7 +169,11 @@ void wm_wifi_connect_task(void *pvParameters)
 			}else
 			{
 				xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
-				xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_CLOSE_SERVER_AND_AP);
+				BaseType_t xStatus = wm_wifi_ap_close();
+				if(xStatus == pdPASS)
+				{
+					xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_AP_CLOSED);
+				}
 			}
 		}
 		else if ((uxBits & WM_EVENTG_WIFI_CONNECT_FAIL) == WM_EVENTG_WIFI_CONNECT_FAIL)
@@ -318,15 +322,18 @@ static void wm_wifi_init(void)
 * @brief Wifi Close AP function
 * @note This function closes the wifi access point.
 *
+* @return BaseType_t Returns pdPASS if the wifi access point is closed successfully otherwise pdFAIL
 */
-static void wm_wifi_ap_close(void)
+static BaseType_t wm_wifi_ap_close(void)
 {
 	wifi_mode_t mode;
 	ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_get_mode(&mode));
 	if(mode == WIFI_MODE_AP || mode == WIFI_MODE_APSTA)
 	{
 		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+		return pdPASS;
 	}
+	return pdFAIL;
 }
 
 /*!
@@ -338,6 +345,8 @@ void wm_wifi_scan_task(void *pvParameters)
 {
 	esp_err_t ret = ESP_FAIL;
 	EventBits_t uxBits;
+
+	wm_queue_wifi_scan_handle = xQueueCreate(1, sizeof(wifi_app_wifi_scan_t *));
 
 	while (1)
 	{

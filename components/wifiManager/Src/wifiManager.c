@@ -102,12 +102,17 @@ static void wm_init_task(void *pvParameters)
 		///>Wait for the HTTP Server to be opened
 		wm_http_server_start();
 		xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_OPEN, pdTRUE, pdFALSE, portMAX_DELAY);
-		
+		ESP_LOGI(TAG, "Wifi Manager Init Task Finished");
 	}
-	xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_CLOSE_SERVER_AND_AP, pdTRUE, pdFALSE, portMAX_DELAY);
+	xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_AP_CLOSED, pdTRUE, pdFALSE, portMAX_DELAY);
 	xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
-
-	///! TODO : Write the code to close the AP and HTTP Server
+	wm_http_server_stop();
+	xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_CLOSED, pdTRUE, pdFALSE, portMAX_DELAY);
+	wm_scan_task_stop();
+	xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_SCAN_TASK_CLOSED, pdTRUE, pdFALSE, portMAX_DELAY);
+	
+	ESP_LOGI(TAG, "Wifi Manager Deinit Task Finished");
+	ESP_LOGI(TAG, "Wifi Manager Deinit Task Deleting Itself");
 
 	vTaskDelete(NULL);
 }
@@ -129,6 +134,22 @@ void wm_http_server_start(void)
 }
 
 /*!
+* @brief HTTP Server Stop Function
+*
+* This function stops the HTTP server.
+*/
+void wm_http_server_stop(void)
+{
+	BaseType_t xReturn = http_server_stop();
+	if (xReturn != pdPASS)
+	{
+		ESP_LOGE(TAG, "Failed to stop HTTP Server");
+		return;
+	}
+	xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_CLOSED);
+}
+
+/*!
 * @brief Task Starter Function
 *
 * This function starts the task.
@@ -144,6 +165,26 @@ void wm_scan_task_start(void)
 		return;
 	}
 	xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_SCAN_TASK_OPEN);
+}
+
+/*!
+* @brief Scan Task Stop Function
+*
+* This function stops the scan task.
+*/
+void wm_scan_task_stop(void)
+{
+	xQueueDelete(wm_queue_wifi_scan_handle);
+	if (wm_queue_wifi_scan_handle != NULL)
+	{
+		wm_queue_wifi_scan_handle = NULL;
+	}
+	vTaskDelete(wm_wifi_scan_task_handle);
+	if (wm_wifi_scan_task_handle != NULL)
+	{
+		wm_wifi_scan_task_handle = NULL;
+	}
+	xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_SCAN_TASK_CLOSED);
 }
 
 /*!

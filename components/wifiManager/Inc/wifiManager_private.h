@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.2.0-prerelase.5
+* @version 0.3.1-prerelase.7
 */
 #ifndef __WIFI_MANAGER_PRIVATE_H__
 #define __WIFI_MANAGER_PRIVATE_H__
@@ -56,12 +56,13 @@
 */
 typedef enum 
 {
-	WM_EVENTG_MAIN_CLOSE_SERVER_AND_AP = 1 << 0,     /*!< Flag for Wifi AP and HTTP Server Close Task Trigger */
-	WM_EVENTG_MAIN_AP_OPEN = 1 << 1,    /*!< Flag for Wifi AP Open */
-	WM_EVENTG_MAIN_AP_CLOSED = 1 << 2,    /*!< Flag for Wifi AP Closed */
-	WM_EVENTG_MAIN_HTTP_OPEN = 1 << 3,    /*!< Flag for HTTP Server Open */
-	WM_EVENTG_MAIN_HTTP_CLOSED = 1 << 4,   /*!< Flag for HTTP Server Closed */
-	WM_EVENTG_MAIN_SCAN_TASK_OPEN = 1 << 5, /*!< Flag for Start Task Sequencer Scan Task Open */
+	//WM_EVENTG_MAIN_CLOSE_SERVER_AND_AP = 1 << 0,     /*!< Flag for Wifi AP and HTTP Server Close Task Trigger */
+	WM_EVENTG_MAIN_AP_OPEN = 1 << 0,    /*!< Flag for Wifi AP Open */
+	WM_EVENTG_MAIN_AP_CLOSED = 1 << 1,    /*!< Flag for Wifi AP Closed */
+	WM_EVENTG_MAIN_HTTP_OPEN = 1 << 2,    /*!< Flag for HTTP Server Open */
+	WM_EVENTG_MAIN_HTTP_CLOSED = 1 << 3,   /*!< Flag for HTTP Server Closed */
+	WM_EVENTG_MAIN_SCAN_TASK_OPEN = 1 << 4, /*!< Flag for Start Task Sequencer Scan Task Open */
+	WM_EVENTG_MAIN_SCAN_TASK_CLOSED = 1 << 5, /*!< Flag for Start Task Sequencer Scan Task Closed */
 	WM_EVENTG_MAIN_HTTP_BLOCK_REQ = 1 << 6, /*!< Flag for HTTP Server Block Request */
 } wm_main_event_group_e; /*!< Wifi Manager Main Event Group Enum */
 
@@ -114,23 +115,6 @@ typedef enum
 *
 */
 EventGroupHandle_t wm_nvs_event_group; /*!< Event Group Handle */
-
-/*!
-* @brief Wifi Manager Close Task Squencer Event Group
-*
-* This enum defines the flags for the Wifi Manager Close Task Squencer Event Group.
-*/
-typedef enum
-{
-	WM_EVENTG_CLOSE_TASK_SQUENCER = 1 << 0, /*!< Flag for Close Task Squencer */
-	WM_EVENTG_CLOSE_TASK_SQUENCER_DONE = 1 << 1, /*!< Flag for Close Task Squencer Done */
-} wm_close_task_squencer_event_group_e; /*!< Wifi Manager Close Task Squencer Event Group Enum */
-
-/*!
-* @brief Wifi Manager Close Task Squencer Event Group Handler
-*
-*/
-EventGroupHandle_t wm_close_task_squencer_event_group; /*!< Event Group Handle */
 
 /*!
 * @brief Wifi Manager Init Task Handler
