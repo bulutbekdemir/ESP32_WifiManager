@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.4.3-prerelase.5
+* @version 0.4.3-prerelase.6
 */
 #include "wm_generalMacros.h"
 #include "wifiManager_private.h"
@@ -413,22 +413,55 @@ static void httpd_resp_send_503(httpd_req_t *req)
  * @brief Initialize and Start the HTTP Server
  * 
  */
-void http_server_init(void)	
+BaseType_t http_server_init(void)	
 {
 	if(wm_http_server_task_handle == NULL)
 	{
 		wm_http_server_task_handle = http_server_configure();
+		if(wm_http_server_task_handle == NULL) 
+		{
+			ESP_LOGE(TAG, "Failed to start HTTP Server");
+			return ESP_FAIL;
+		}
+		else
+		{
+			ESP_LOGI(TAG, "HTTP Server started successfully");
+			return ESP_OK;
+		}
 	}
+	ESP_LOGW(TAG, "HTTP Server is already started");
+	return ESP_FAIL;
 }
 
 /*!
 * @brief Stops HTTP Server 
+* @note Stops the HTTP Server and deletes the Wifi Request Semaphore
+*
+* @return pdTRUE if successful, otherwise pdFALSE 
 */
-void http_server_stop(void)
+BaseType_t http_server_stop(void)
 {
 	if(wm_http_server_task_handle != NULL)
 	{
 		httpd_stop(wm_http_server_task_handle);
 		wm_http_server_task_handle = NULL;
 	}
+	else
+	{
+		ESP_LOGW(TAG, "HTTP Server is already stopped");
+	}
+	if(wm_http_wifi_request_semaphore != NULL)
+	{
+		vSemaphoreDelete(wm_http_wifi_request_semaphore);
+		wm_http_wifi_request_semaphore = NULL;
+	}
+	else
+	{
+		ESP_LOGW(TAG, "HTTP Wifi Request Semaphore is already deleted");
+	}
+	if(wm_http_server_task_handle == NULL && wm_http_wifi_request_semaphore == NULL)
+	{
+		return pdTRUE;
+	}
+	return pdFALSE;
 }
