@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.4.2-prerelase.5
+* @version 0.4.3-prerelase.5
 */
 #include "wm_generalMacros.h"
 #include "wifiManager_private.h"
@@ -371,9 +371,6 @@ static httpd_handle_t http_server_configure(void)
 			.handler = http_server_wifi_scan_result_list_json_handler,
 			.user_ctx = NULL
 		};
-
-		///>Timeout Handler for all URIs
-		httpd_register_err_handler(wm_http_server_task_handle, HTTPD_404_NOT_FOUND, NULL);
 
 		///> Register the URI handlers
 		httpd_register_uri_handler(wm_http_server_task_handle, &index_uri);
