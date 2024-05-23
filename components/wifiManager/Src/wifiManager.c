@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.1.0-prerelase.1 
+* @version 0.2.0-prerelase.3 
 */
 #include "wifiManager.h"
 
@@ -93,6 +93,25 @@ static void wm_init_task(void *pvParameters)
 		/*! Start the HTTP Server and related tasks if the NVS Credentials are not found */
 		ESP_LOGI(TAG, "NVS Credentials Not Found");
 
+		xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_OPEN);
+
 	}
+	xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_CLOSE_SERVER_AND_AP, pdTRUE, pdFALSE, portMAX_DELAY);
+	xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
+	
 	vTaskDelete(NULL);
+}
+
+/*!
+* @brief Delete Event Group
+*
+* This function deletes the event group.
+*/
+void wm_delete_event_group(EventGroupHandle_t *event_group)
+{
+	if (event_group != NULL)
+	{
+		vEventGroupDelete(*event_group);,
+		*event_group = NULL;
+	}
 }
