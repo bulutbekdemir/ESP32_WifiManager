@@ -140,48 +140,51 @@ static esp_err_t http_server_favicon_handler(httpd_req_t *req)
 */
 static esp_err_t http_server_wifi_connect_json_handler(httpd_req_t *req)
 {
-	ESP_LOGI(TAG, "Wifi Connect JSON Handler");
-	if(!(xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_BLOCK_REQ) || !(xEventGroupGetBits(wm_wifi_event_group) & WM_EVENTG_WIFI_CONNECTED))
+	if(xSemaphoreTake(wm_http_wifi_request_semaphore, portMAX_DELAY) == pdTRUE)
 	{
-		size_t lenSSID = 0, lenPassword = 0;
-		char *ssid = NULL, *password = NULL;
-
-		///> Get SSID header
-		lenSSID = httpd_req_get_hdr_value_len(req, "ConnectSSID") + 1;
-		if(lenSSID > 1)
+		ESP_LOGI(TAG, "Wifi Connect JSON Handler");
+		if(!(xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_BLOCK_REQ) || !(xEventGroupGetBits(wm_wifi_event_group) & WM_EVENTG_WIFI_CONNECTED))
 		{
-			ssid = malloc(lenSSID);
-			if(httpd_req_get_hdr_value_str(req, "ConnectSSID", ssid, lenSSID) == ESP_OK)
-			{
-				ESP_LOGI(TAG, "SSID: %s", ssid);
-			}
-		}
+			size_t lenSSID = 0, lenPassword = 0;
+			char *ssid = NULL, *password = NULL;
 
-		///> Get Password header
-		lenPassword = httpd_req_get_hdr_value_len(req, "ConnectPassword") + 1;
-		if(lenPassword > 1)
+			///> Get SSID header
+			lenSSID = httpd_req_get_hdr_value_len(req, "ConnectSSID") + 1;
+			if(lenSSID > 1)
+			{
+				ssid = malloc(lenSSID);
+				if(httpd_req_get_hdr_value_str(req, "ConnectSSID", ssid, lenSSID) == ESP_OK)
+				{
+					ESP_LOGI(TAG, "SSID: %s", ssid);
+				}
+			}
+
+			///> Get Password header
+			lenPassword = httpd_req_get_hdr_value_len(req, "ConnectPassword") + 1;
+			if(lenPassword > 1)
+			{
+				password = malloc(lenPassword);
+				if(httpd_req_get_hdr_value_str(req, "ConnectPassword", password, lenPassword) == ESP_OK)
+				{
+					ESP_LOGI(TAG, "Password: %s", password);
+				}
+			}
+
+			wifi_config_t* wifi_config = malloc(sizeof(wifi_config_t));
+			memset(wifi_config, 0, sizeof(wifi_config_t));
+			memcpy(wifi_config->sta.ssid, ssid, lenSSID);
+			memcpy(wifi_config->sta.password, password, lenPassword);
+
+			wm_wifi_send_message(wifi_config);
+
+			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT);
+
+			free(ssid);
+			free(password);
+		}else 
 		{
-			password = malloc(lenPassword);
-			if(httpd_req_get_hdr_value_str(req, "ConnectPassword", password, lenPassword) == ESP_OK)
-			{
-				ESP_LOGI(TAG, "Password: %s", password);
-			}
+			httpd_resp_send_503(req);
 		}
-
-		wifi_config_t* wifi_config = malloc(sizeof(wifi_config_t));
-		memset(wifi_config, 0, sizeof(wifi_config_t));
-		memcpy(wifi_config->sta.ssid, ssid, lenSSID);
-		memcpy(wifi_config->sta.password, password, lenPassword);
-
-		wm_wifi_send_message(wifi_config);
-
-		xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT);
-
-		free(ssid);
-		free(password);
-	}else 
-	{
-		httpd_resp_send_503(req);
 	}
 	return ESP_OK;
 }
@@ -209,41 +212,44 @@ static esp_err_t http_server_wifi_status_json_handler(httpd_req_t *req)
 */
 static esp_err_t http_server_wifi_scan_result_list_json_handler(httpd_req_t *req)
 {
-	if(!(xEventGetGroupBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_BLOCK_REQ))
+	if(xSemaphoreTake(wm_http_wifi_request_semaphore, portMAX_DELAY) == pdTRUE)
 	{
-		xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_START);
-		wifi_app_wifi_scan_t* wifi_scan = wifi_app_wifi_scan_t_init();
-		wm_wifi_receive_scan_message(&wifi_scan);
-		char wifiScanJSON[1000];
-		sprintf(wifiScanJSON, "{\"ap_count\":%d, \"ap_records\":[", wifi_scan->ap_count);
-		for(int i = 0; i < wifi_scan->ap_count; i++)
+		if(!(xEventGetGroupBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_BLOCK_REQ))
 		{
-			char temp[100];
-			sprintf(temp, "{\"ssid\":\"%s\", \"rssi\":%d, \"authmode\":%d}", wifi_scan->ap_records[i].ssid, wifi_scan->ap_records[i].rssi, wifi_scan->ap_records[i].authmode);
-			strcat(wifiScanJSON, temp);
-			if(i < wifi_scan->ap_count - 1)
+			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_START);
+			wifi_app_wifi_scan_t* wifi_scan = wifi_app_wifi_scan_t_init();
+			wm_wifi_receive_scan_message(&wifi_scan);
+			char wifiScanJSON[1000];
+			sprintf(wifiScanJSON, "{\"ap_count\":%d, \"ap_records\":[", wifi_scan->ap_count);
+			for(int i = 0; i < wifi_scan->ap_count; i++)
 			{
-				strcat(wifiScanJSON, ",");
+				char temp[100];
+				sprintf(temp, "{\"ssid\":\"%s\", \"rssi\":%d, \"authmode\":%d}", wifi_scan->ap_records[i].ssid, wifi_scan->ap_records[i].rssi, wifi_scan->ap_records[i].authmode);
+				strcat(wifiScanJSON, temp);
+				if(i < wifi_scan->ap_count - 1)
+				{
+					strcat(wifiScanJSON, ",");
+				}
 			}
-		}
-		strcat(wifiScanJSON, "]}");
-		httpd_resp_set_type(req, "application/json");
-		httpd_resp_send(req, wifiScanJSON, strlen(wifiScanJSON));
+			strcat(wifiScanJSON, "]}");
+			httpd_resp_set_type(req, "application/json");
+			httpd_resp_send(req, wifiScanJSON, strlen(wifiScanJSON));
 
-		wifi_app_wifi_scan_t_deinit(wifi_scan);
-		xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_DONE);		
-	}/* IDK if this is necessary or the right way to do it
-	else if ((xEventGetGroupBits(wm_wifi_event_group) & WM_EVENTG_WIFI_CONNECTED))
-	{
-		httpd_resp_send_503(req); //Connection is established, do not allow scan
-	}else if(!(xEventGetGroupBits(wm_nvs_event_group) & WM_EVENTG_NVS_DONE)) 
-	{
-		httpd_resp_send_503(req); //NVS is not done, do not allow scan
-	}*/
-	 else
-	{
-		httpd_resp_send_503(req); //Default 404
-	}	
+			wifi_app_wifi_scan_t_deinit(wifi_scan);
+			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_DONE);		
+		}/* IDK if this is necessary or the right way to do it
+		else if ((xEventGetGroupBits(wm_wifi_event_group) & WM_EVENTG_WIFI_CONNECTED))
+		{
+			httpd_resp_send_503(req); //Connection is established, do not allow scan
+		}else if(!(xEventGetGroupBits(wm_nvs_event_group) & WM_EVENTG_NVS_DONE)) 
+		{
+			httpd_resp_send_503(req); //NVS is not done, do not allow scan
+		}*/
+		else
+		{
+			httpd_resp_send_503(req); //Default 404
+		}	
+	}
 		return ESP_OK;
 }
 
@@ -266,6 +272,14 @@ static httpd_handle_t http_server_configure(void)
 	config.max_uri_handlers = 20;
 	config.recv_wait_timeout = 10; //10 seconds
 	config.send_wait_timeout = 10; //10 seconds
+
+	wm_http_wifi_request_semaphore = xSemaphoreCreateBinary();
+	if(wm_http_wifi_request_semaphore == NULL)
+	{
+			ESP_LOGE(TAG, "Semaphore creation failed");
+	}
+	xSemaphoreGive(wm_http_wifi_request_semaphore); 
+
 
 	ESP_LOGI(TAG, "Starting HTTP Server on port: '%d' with task priority: '%d'", config.server_port, config.task_priority);
 

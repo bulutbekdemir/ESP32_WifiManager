@@ -14,6 +14,12 @@
 #include "esp_http_server.h"
 
 /*!
+* @brief HTTP Wifi Request Handler Semaphore
+* @note This semaphore is used to handle the wifi request from the HTTP server.
+*/
+SemaphoreHandle_t wm_http_wifi_request_semaphore;
+
+/*!
 * @brief HTTP Server Task Handler
 *
 */

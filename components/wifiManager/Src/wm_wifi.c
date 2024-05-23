@@ -191,7 +191,6 @@ void wm_wifi_connect_task(void *pvParameters)
 		}
 		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
 		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT);
-		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECTED);
 		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
 	}
 }
