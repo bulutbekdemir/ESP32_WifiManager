@@ -5,11 +5,21 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.2.0-prerelase.3 
+* @version 0.2.0-prerelase.3+1 
 */
 #include "wifiManager.h"
 
 static const char *TAG = "WIFI_MANAGER_MAIN";
+
+///>Function Prototypes
+static void wm_http_server_start(void);
+static void wm_http_server_stop(void);
+static void wm_scan_task_start(void);
+static void wm_scan_task_stop(void);
+
+
+///>Task Prototypes
+static void wm_init_task(void *pvParameters);
 
 esp_err_t wifiManager_init ()
 {
@@ -50,7 +60,7 @@ esp_err_t wifiManager_init ()
 
 	///> Initialize Wifi Connect Task
 	xReturned = xTaskCreatePinnedToCore(&wm_wifi_connect_task, "wm_wifi_connect_task", WIFI_CONNECT_TASK_STACK_SIZE, NULL, \
-																WIFI_CONNECT_TASK_PRIORITY, &wm_wifi_connect_task_handle	, WIFI_CONNECT_CORE_ID);
+																WIFI_CONNECT_TASK_PRIORITY, &wm_wifi_connect_task_handle	, WIFI_CONNECT_TASK_CORE_ID);
 	if (xReturned != pdPASS)
 	{
 		ESP_LOGE(TAG, "Failed to create Wifi Connect Task");
@@ -59,7 +69,7 @@ esp_err_t wifiManager_init ()
 
 	///> Initialize NVS Taski
 	xReturned = xTaskCreatePinnedToCore(&wm_nvs_task, "wm_nvs_task", NVS_TASK_STACK_SIZE, NULL, \
-																NVS_TASK_PRIORITY, &wm_nvs_task_handle, NVS_CORE_ID);
+																NVS_TASK_PRIORITY, &wm_nvs_task_handle, NVS_TASK_CORE_ID);
 	if (xReturned != pdPASS)
 	{
 		ESP_LOGE(TAG, "Failed to create NVS Task");
@@ -122,7 +132,7 @@ static void wm_init_task(void *pvParameters)
 *
 * This function starts the HTTP server.
 */
-void wm_http_server_start(void)
+static void wm_http_server_start(void)
 {
 	BaseType_t xReturn = http_server_init();
 	if (xReturn != pdPASS)
@@ -138,7 +148,7 @@ void wm_http_server_start(void)
 *
 * This function stops the HTTP server.
 */
-void wm_http_server_stop(void)
+static void wm_http_server_stop(void)
 {
 	BaseType_t xReturn = http_server_stop();
 	if (xReturn != pdPASS)
@@ -154,11 +164,11 @@ void wm_http_server_stop(void)
 *
 * This function starts the task.
 */
-void wm_scan_task_start(void)
+static void wm_scan_task_start(void)
 {
 	BaseType_t xReturned = pdFAIL;
-	xReturned = xTaskCreatePinnedToCore(&wm_scan_task, "wm_scan_task", SCAN_TASK_STACK_SIZE, NULL, \
-							SCAN_TASK_PRIORITY, NULL, SCAN_TASK_CORE_ID);
+	xReturned = xTaskCreatePinnedToCore(&wm_wifi_scan_task, "wm_scan_task", WIFI_SCAN_TASK_STACK_SIZE, NULL, \
+							WIFI_SCAN_TASK_PRIORITY, NULL, WIFI_SCAN_TASK_CORE_ID);
 	if (xReturned != pdPASS)
 	{
 		ESP_LOGE(TAG, "Failed to create Wifi Scan Task");
@@ -172,9 +182,9 @@ void wm_scan_task_start(void)
 *
 * This function stops the scan task.
 */
-void wm_scan_task_stop(void)
+static void wm_scan_task_stop(void)
 {
-	xQueueDelete(wm_queue_wifi_scan_handle);
+	vQueueDelete(wm_queue_wifi_scan_handle);
 	if (wm_queue_wifi_scan_handle != NULL)
 	{
 		wm_queue_wifi_scan_handle = NULL;
@@ -187,16 +197,3 @@ void wm_scan_task_stop(void)
 	xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_SCAN_TASK_CLOSED);
 }
 
-/*!
-* @brief Delete Event Group
-*
-* This function deletes the event group.
-*/
-void wm_delete_event_group(EventGroupHandle_t *event_group)
-{
-	if (event_group != NULL)
-	{
-		vEventGroupDelete(*event_group);,
-		*event_group = NULL;
-	}
-}

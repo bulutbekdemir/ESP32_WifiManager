@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.2.0-prerelase.2
+* @version 0.2.0-prerelase.2+1
 */
 #ifndef WM_HTTPSERVER_H_
 #define WM_HTTPSERVER_H_
@@ -23,14 +23,14 @@ SemaphoreHandle_t wm_http_wifi_request_semaphore;
 * @brief HTTP Server Task Handler
 *
 */
-TaskHandle_t wm_http_server_task_handle;
+httpd_handle_t wm_http_server_task_handle;
 
 /*!
 * @brief HTTP Server Start Function
 *
 * This function starts the HTTP server.
 */
-BaseType_t http_server_init(void)	
+BaseType_t http_server_init(void);	
 
 /*!
 * @brief HTTP Server Stop Function

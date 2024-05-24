@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.4.3-prerelase.6
+* @version 0.4.3-prerelase.6+1
 */
 #include "wm_generalMacros.h"
 #include "wifiManager_private.h"
@@ -217,12 +217,12 @@ static esp_err_t http_server_wifi_scan_result_list_json_handler(httpd_req_t *req
 	ESP_LOGI(TAG, "Wifi Scan Result List JSON Handler, waiting for semaphore");
 	if(xSemaphoreTake(wm_http_wifi_request_semaphore, portMAX_DELAY) == pdTRUE)
 	{
-		if(!(xEventGetGroupBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_BLOCK_REQ))
+		if(!(xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_BLOCK_REQ))
 		{
 			ESP_LOGI(TAG, "Wifi Scan Result List JSON Handler, semaphore taken");
 			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_START);
 			wifi_app_wifi_scan_t* wifi_scan = wifi_app_wifi_scan_t_init();
-			wm_wifi_receive_scan_message(&wifi_scan);
+			wm_wifi_receive_scan_message(wifi_scan);
 			char wifiScanJSON[1000];
 			sprintf(wifiScanJSON, "{\"ap_count\":%d, \"ap_records\":[", wifi_scan->ap_count);
 			for(int i = 0; i < wifi_scan->ap_count; i++)
@@ -385,7 +385,6 @@ static httpd_handle_t http_server_configure(void)
 		httpd_register_uri_handler(wm_http_server_task_handle, &wifi_connect_json);
 		httpd_register_uri_handler(wm_http_server_task_handle, &wifi_connect_status_json);
 		///> Register the URI handlers for Wifi Scan
-		httpd_register_uri_handler(wm_http_server_task_handle, &wifi_scan_result_json);
 		httpd_register_uri_handler(wm_http_server_task_handle, &wifi_scan_result_list_json);
 
 		return wm_http_server_task_handle;

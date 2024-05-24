@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.1.0-prerelase.1
+* @version 0.1.0-prerelase.1+1
 */
 #ifndef WIFI_APP_H_
 #define WIFI_APP_H_
@@ -111,13 +111,13 @@ void wm_wifi_scan_task(void *pvParameters);
  * @brief Send Message to Wifi Config Queue
  * 
  */
-BaseType_t wm_wifi_send_message(wifi_config_t *wifi_config)
+BaseType_t wm_wifi_send_message(wifi_config_t *wifi_config);
 
 /*!
  * @brief Receive Message from Wifi Config Queue
  * 
  */
-BaseType_t wm_wifi_receive_message(wifi_config_t *wifi_config)
+BaseType_t wm_wifi_receive_message(wifi_config_t *wifi_config);
 
 /*!
  * @brief Send Message to Wifi Scan Queue

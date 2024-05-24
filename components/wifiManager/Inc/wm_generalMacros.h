@@ -25,7 +25,7 @@
 *    MyStruct_deinit(ptr);
 *
 * @copyright BSD 3-Clause License
-* @version 1.0.0
+* @version 1.0.1+1
 */
 
 #ifndef GENERALMACROS_H
@@ -41,7 +41,7 @@
 #define REF_COUNT_FIELD int ref_count;
 
 #define HAS_REF_COUNT_FIELD(struct_type) \
-    _Static_assert(offsetof(struct_type, ref_count) == 0, "Struct does not contain ref_count field");
+    _Static_assert(!(offsetof(struct_type, ref_count) == 0), "Struct does not contain ref_count field");
 
 #define INIT_FUNC(struct_type) \
     HAS_REF_COUNT_FIELD(struct_type) \

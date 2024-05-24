@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.2.0-prerelase.0
+* @version 0.2.0-prerelase.0+1
 */
 #include "esp_err.h"
 #include "nvs_flash.h"
@@ -19,8 +19,8 @@ const char wm_nvs_namespace[] = "wifi_manager";
 
 static esp_err_t wm_nvs_read ()
 {
-	char *ssid; 
-	char *password;
+	char *ssid = (char *)malloc(MAX_SSID_LENGTH);
+	char *password = (char *)malloc(MAX_PASSWORD_LENGTH);
 
 	size_t ssid_len = MAX_SSID_LENGTH;
 	size_t password_len = MAX_PASSWORD_LENGTH;
@@ -29,7 +29,7 @@ static esp_err_t wm_nvs_read ()
 	esp_err_t err;
 
 
-	err = nvs_open(&wm_nvs_namespace, NVS_READONLY, &nvs_handle);
+	err = nvs_open(wm_nvs_namespace, NVS_READONLY, &nvs_handle);
 	if (err != ESP_OK) {
 			ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
 			xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_FAIL);
@@ -51,9 +51,10 @@ static esp_err_t wm_nvs_read ()
 
   wifi_config_t wifi_config = {
 		.sta = {
-			.ssid = (uint8_t *)ssid,
-			.password = (uint8_t *)password
-	} };
+			.ssid = {(uint8_t )*ssid},
+			.password = {(uint8_t )*password}
+		} 
+	};
 
 	wm_wifi_send_message(&wifi_config);
 
@@ -79,7 +80,7 @@ static void wm_nvs_write ()
 	nvs_handle_t nvs_handle;
 	esp_err_t err;
 
-	err = nvs_open(&wm_nvs_namespace, NVS_READWRITE, &nvs_handle);
+	err = nvs_open(wm_nvs_namespace, NVS_READWRITE, &nvs_handle);
 	if (err != ESP_OK) {
 			ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
 			xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_FAIL);
@@ -117,7 +118,7 @@ void wm_nvs_clear ()
 	nvs_handle_t nvs_handle;
 	esp_err_t err;
 
-	err = nvs_open(&wm_nvs_namespace, NVS_READWRITE, &nvs_handle);
+	err = nvs_open(wm_nvs_namespace, NVS_READWRITE, &nvs_handle);
 	if (err != ESP_OK) {
 			ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
 			xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_FAIL);
@@ -142,8 +143,6 @@ void wm_nvs_clear ()
 
 void wm_nvs_task(void *pvParameters)
 {
-	esp_err_t ret = ESP_FAIL;
-
 	while (1)
 	{
 		EventBits_t uxBits = xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_READ_CREDS | WM_EVENTG_NVS_WRITE_CREDS | WM_EVENTG_NVS_CLEAR_CREDS, \

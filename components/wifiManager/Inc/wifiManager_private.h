@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.3.1-prerelase.7
+* @version 0.3.1-prerelase.7+1
 */
 #ifndef __WIFI_MANAGER_PRIVATE_H__
 #define __WIFI_MANAGER_PRIVATE_H__
@@ -23,6 +23,7 @@
 
 #include "wm_wifi.h"
 #include "wm_nvs.h"
+#include "wm_httpServer.h"
 
 //Wifi Manager Init task
 #define WIFI_MANAGER_INIT_TASK_PRIORITY			CONFIG_WIFI_MANAGER_INIT_TASK_PRIORITY // 6 is default
