@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.1.0-prerelase.0
+* @version 0.2.0-prerelase.0
 */
 #include "esp_err.h"
 #include "nvs_flash.h"
@@ -66,6 +66,80 @@ static esp_err_t wm_nvs_read ()
 	return ESP_OK;
 }
 
+/*!
+* @brief NVS Write Function
+*
+* This function writes the wifi credentials to the NVS.
+*/
+static void wm_nvs_write ()
+{
+	wifi_config_t wifi_config;
+	wm_wifi_receive_message(&wifi_config);
+
+	nvs_handle_t nvs_handle;
+	esp_err_t err;
+
+	err = nvs_open(&wm_nvs_namespace, NVS_READWRITE, &nvs_handle);
+	if (err != ESP_OK) {
+			ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
+			xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_FAIL);
+			return;
+	}
+
+	err = nvs_set_str(nvs_handle, "ssid", (char *)wifi_config.sta.ssid);
+	if (err != ESP_OK) {
+			ESP_LOGE(TAG, "Error (%s) writing SSID!", esp_err_to_name(err));
+	}
+
+	err = nvs_set_str(nvs_handle, "password", (char *)wifi_config.sta.password);
+	if (err != ESP_OK) {
+			ESP_LOGE(TAG, "Error (%s) writing password!", esp_err_to_name(err));
+	}
+
+	err = nvs_commit(nvs_handle);
+	if (err != ESP_OK) {
+			ESP_LOGE(TAG, "Error (%s) committing NVS!", esp_err_to_name(err));
+	}
+
+	nvs_close(nvs_handle);
+
+	xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE);
+}
+
+
+/*!
+* @brief NVS Clear Function
+*
+* This function clears the wifi credentials from the NVS.
+*/
+void wm_nvs_clear ()
+{
+	nvs_handle_t nvs_handle;
+	esp_err_t err;
+
+	err = nvs_open(&wm_nvs_namespace, NVS_READWRITE, &nvs_handle);
+	if (err != ESP_OK) {
+			ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
+			xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_FAIL);
+			return;
+	}
+
+	err = nvs_erase_all(nvs_handle);
+	if (err != ESP_OK) {
+			ESP_LOGE(TAG, "Error (%s) erasing NVS!", esp_err_to_name(err));
+	}
+
+	err = nvs_commit(nvs_handle);
+	if (err != ESP_OK) {
+			ESP_LOGE(TAG, "Error (%s) committing NVS!", esp_err_to_name(err));
+	}
+
+	nvs_close(nvs_handle);
+
+	xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE);
+}
+
+
 void wm_nvs_task(void *pvParameters)
 {
 	esp_err_t ret = ESP_FAIL;
@@ -76,6 +150,7 @@ void wm_nvs_task(void *pvParameters)
 																			pdTRUE, pdFALSE, portMAX_DELAY);
 		if ((uxBits & WM_EVENTG_NVS_WRITE_CREDS) != 0)
 		{
+			xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
 			ESP_LOGI(TAG, "NVS Write Event Triggered");
 			wm_nvs_write();
 		}
@@ -96,6 +171,7 @@ void wm_nvs_task(void *pvParameters)
 		}
 		else if((uxBits & WM_EVENTG_NVS_CLEAR_CREDS) != 0)
 		{
+			xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
 			ESP_LOGI(TAG, "NVS Clear Event Triggered");
 			wm_nvs_clear();
 		}
