@@ -16,7 +16,7 @@
 * @brief NVS Task Handler
 *
 */
-TaskHandle_t wm_nvs_task_handle;
+extern TaskHandle_t wm_nvs_task_handle;
 
 /*!
 * @brief NVS Task

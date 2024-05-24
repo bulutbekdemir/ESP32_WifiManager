@@ -61,7 +61,7 @@ typedef enum
 * @brief Wifi Manager Main Event Group Handler
 *
 */
-EventGroupHandle_t wm_main_event_group; /*!< Event Group Handle */
+extern EventGroupHandle_t wm_main_event_group; /*!< Event Group Handle */
 
 /*!
 * @brief Wifi Event Group 
@@ -83,7 +83,7 @@ typedef enum
 * @brief Wifi Manager Wifi Event Group Handler
 *
 */
-EventGroupHandle_t wm_wifi_event_group; /*!< Event Group Handle */
+extern EventGroupHandle_t wm_wifi_event_group; /*!< Event Group Handle */
 
 /*!
 * @brief Wifi Manager NVS Event Group
@@ -105,13 +105,6 @@ typedef enum
 * @brief Wifi Manager NVS Event Group Handler
 *
 */
-EventGroupHandle_t wm_nvs_event_group; /*!< Event Group Handle */
-
-/*!
-* @brief Wifi Manager Init Task Handler
-*
-*/
-TaskHandle_t wm_init_task_handle; /*!< Wifi Manager Init Task Handle */
-
+extern EventGroupHandle_t wm_nvs_event_group; /*!< Event Group Handle */
 
 #endif /* __WIFI_MANAGER_PRIVATE_H__ */

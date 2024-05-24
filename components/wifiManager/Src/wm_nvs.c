@@ -18,6 +18,12 @@
 static const char *TAG = "WM_NVS";
 const char wm_nvs_namespace[] = "wifi_manager";
 
+/*!
+* @brief NVS Task Handler
+*
+*/
+TaskHandle_t wm_nvs_task_handle;
+
 static esp_err_t wm_nvs_read ()
 {
 	char *ssid = (char *)malloc(MAX_SSID_LENGTH);

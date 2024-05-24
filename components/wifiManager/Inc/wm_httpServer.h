@@ -16,13 +16,13 @@
 * @brief HTTP Wifi Request Handler Semaphore
 * @note This semaphore is used to handle the wifi request from the HTTP server.
 */
-SemaphoreHandle_t wm_http_wifi_request_semaphore;
+extern SemaphoreHandle_t wm_http_wifi_request_semaphore;
 
 /*!
 * @brief HTTP Server Task Handler
 *
 */
-httpd_handle_t wm_http_server_task_handle;
+extern httpd_handle_t wm_http_server_task_handle;
 
 /*!
 * @brief HTTP Server Start Function

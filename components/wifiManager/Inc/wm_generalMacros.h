@@ -85,10 +85,10 @@
 #define RETAIN_FUNC(struct_type) DEFINE_RETAIN_FUNC(struct_type)
 #define RELEASE_FUNC(struct_type) DEFINE_RELEASE_FUNC(struct_type)
 
-#define DECLARE_INIT_FUNC(struct_type) extern struct_type *struct_type##_init();
-#define DECLARE_DEINIT_FUNC(struct_type) extern void struct_type##_deinit(struct_type *ptr);
-#define DECLARE_RETAIN_FUNC(struct_type) extern void struct_type##_retain(struct_type *ptr);
-#define DECLARE_RELEASE_FUNC(struct_type) extern void struct_type##_release(struct_type *ptr);
+#define DECLARE_INIT_FUNC(struct_type) extern struct_type *struct_type##_init()
+#define DECLARE_DEINIT_FUNC(struct_type) extern void struct_type##_deinit(struct_type *ptr)
+#define DECLARE_RETAIN_FUNC(struct_type) extern void struct_type##_retain(struct_type *ptr)
+#define DECLARE_RELEASE_FUNC(struct_type) extern void struct_type##_release(struct_type *ptr)
 
 #else
 

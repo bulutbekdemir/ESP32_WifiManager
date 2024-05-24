@@ -16,6 +16,18 @@
 
 static const char *TAG = "WM_HTTP_SERVER";
 
+/*!
+* @brief HTTP Wifi Request Handler Semaphore
+* @note This semaphore is used to handle the wifi request from the HTTP server.
+*/
+SemaphoreHandle_t wm_http_wifi_request_semaphore;
+
+/*!
+* @brief HTTP Server Task Handler
+*
+*/
+httpd_handle_t wm_http_server_task_handle;
+
 ///> Declare the 503 response function
 static void httpd_resp_send_503(httpd_req_t *req);
 
@@ -37,8 +49,15 @@ extern const uint8_t jquery_3_3_1_min_js_end[] asm("_binary_jquery_3_3_1_min_js_
 extern const uint8_t favicon_ico_start[] asm("_binary_favicon_ico_start");
 extern const uint8_t favicon_ico_end[] asm("_binary_favicon_ico_end");
 
-INIT_FUNC(wifi_app_wifi_scan_t);
-DEINIT_FUNC(wifi_app_wifi_scan_t);
+/*!
+* @brief Function Declarations for Wifi Scan Struct
+*
+*/
+DECLARE_INIT_FUNC(wifi_app_wifi_scan_t);
+DECLARE_DEINIT_FUNC(wifi_app_wifi_scan_t);
+DECLARE_RETAIN_FUNC(wifi_app_wifi_scan_t);
+DECLARE_RELEASE_FUNC(wifi_app_wifi_scan_t);
+
 
 /*!
 * @brief HTTP Server Index Handler

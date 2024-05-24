@@ -10,6 +10,8 @@
 #ifndef WIFI_APP_H_
 #define WIFI_APP_H_
 
+#include "stdint.h"
+
 #include "esp_netif.h"
 #include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
@@ -65,25 +67,25 @@ typedef struct {
 * @brief Wifi Manager Wifi Config Queue Handler
 *
 */
-QueueHandle_t wm_queue_wifi_config_handle; /*!< Wifi Config Queue Handle */
+extern QueueHandle_t wm_queue_wifi_config_handle; /*!< Wifi Config Queue Handle */
 
 /*!
 * @brief Wifi Manager Wifi Scan Queue Handler
 *
 */
-QueueHandle_t wm_queue_wifi_scan_handle; /*!< Wifi Scan Queue Handle */
+extern QueueHandle_t wm_queue_wifi_scan_handle; /*!< Wifi Scan Queue Handle */
 
 /*!
 * @brief Wifi Manager Wifi Connect Task Handler
 *
 */
-TaskHandle_t wm_wifi_connect_task_handle; /*!< Wifi Connect Task Handle */
+extern TaskHandle_t wm_wifi_connect_task_handle; /*!< Wifi Connect Task Handle */
 
 /*!
 * @brief Wifi Manager Wifi Scan Task Handler
 *
 */
-TaskHandle_t wm_wifi_scan_task_handle; /*!< Wifi Scan Task Handle */
+extern TaskHandle_t wm_wifi_scan_task_handle; /*!< Wifi Scan Task Handle */
 
 /*!
 * @brief Wifi Manager Wifi Connect Task

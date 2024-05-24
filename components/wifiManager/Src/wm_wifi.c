@@ -24,6 +24,30 @@ esp_netif_t *esp_sta_netif;
 /// @brief Wifi Access Point Netif
 esp_netif_t *esp_ap_netif;
 
+/*!
+* @brief Wifi Manager Wifi Config Queue Handler
+*
+*/
+QueueHandle_t wm_queue_wifi_config_handle; /*!< Wifi Config Queue Handle */
+
+/*!
+* @brief Wifi Manager Wifi Scan Queue Handler
+*
+*/
+QueueHandle_t wm_queue_wifi_scan_handle; /*!< Wifi Scan Queue Handle */
+
+/*!
+* @brief Wifi Manager Wifi Connect Task Handler
+*
+*/
+TaskHandle_t wm_wifi_connect_task_handle; /*!< Wifi Connect Task Handle */
+
+/*!
+* @brief Wifi Manager Wifi Scan Task Handler
+*
+*/
+TaskHandle_t wm_wifi_scan_task_handle; /*!< Wifi Scan Task Handle */
+
 /// @brief Wifi STA function declaration
 static esp_err_t wm_wifi_connect_sta(wifi_config_t *wifi_config);
 /// @brief Wifi Default Wifi Init function declaration

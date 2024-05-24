@@ -17,12 +17,35 @@
 
 static const char *TAG = "WIFI_MANAGER_MAIN";
 
+/*!
+* @brief Wifi Manager Init Task Handler
+*
+*/
+TaskHandle_t wm_init_task_handle; /*!< Wifi Manager Init Task Handle */
+
+/*!
+* @brief Wifi Manager NVS Event Group Handler
+*
+*/
+EventGroupHandle_t wm_nvs_event_group; /*!< Event Group Handle */
+
+/*!
+* @brief Wifi Manager Wifi Event Group Handler
+*
+*/
+EventGroupHandle_t wm_wifi_event_group; /*!< Event Group Handle */
+
+/*!
+* @brief Wifi Manager Main Event Group Handler
+*
+*/
+EventGroupHandle_t wm_main_event_group; /*!< Event Group Handle */
+
 ///>Function Prototypes
 static void wm_http_server_start(void);
 static void wm_http_server_stop(void);
 static void wm_scan_task_start(void);
 static void wm_scan_task_stop(void);
-
 
 ///>Task Prototypes
 static void wm_init_task(void *pvParameters);
