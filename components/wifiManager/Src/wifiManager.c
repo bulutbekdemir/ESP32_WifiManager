@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.2.2-prerelase.3+1 
+* @version 0.2.3-prerelase.3+3 
 */
 #include "esp_log.h"
 
