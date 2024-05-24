@@ -5,14 +5,15 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.2.0-prerelase.0+1
+* @version 0.2.1-prerelase.0+1
 */
 #include "esp_err.h"
+#include "esp_log.h"
 #include "nvs_flash.h"
-
 
 #include "wifiManager_private.h"
 #include "wm_nvs.h"
+#include "wm_wifi.h"
 
 static const char *TAG = "WM_NVS";
 const char wm_nvs_namespace[] = "wifi_manager";

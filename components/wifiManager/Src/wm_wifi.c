@@ -5,9 +5,16 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.1.2-prerelase.2+1
+* @version 0.1.3-prerelase.2+1
 */
+#include "esp_wifi.h"
+#include "esp_log.h"
+#include "esp_netif.h"
+#include "esp_wifi_netif.h"
+#include "lwip/netdb.h"
+
 #include "wifiManager_private.h"
+#include "wm_generalMacros.h"
 #include "wm_wifi.h"
 
 static const char *TAG = "WM_WIFI";
@@ -31,6 +38,17 @@ static void wm_wifi_connect_apsta(void);
 static BaseType_t wm_wifi_ap_close(void);
 /// @brief Wifi Scan function declaration
 static void wm_wifi_scan(wifi_app_wifi_scan_t *wifi_scan_list);
+
+/*!
+* @brief Struct initialization, deinitialization, retain and release functions
+* @note This functions meant to be used with struct types that are meant to be used with reference counting.
+*
+*/
+INIT_FUNC(wifi_app_wifi_scan_t);
+DEINIT_FUNC(wifi_app_wifi_scan_t);
+RETAIN_FUNC(wifi_app_wifi_scan_t); ///! TODO: Delete when release version is ready 
+RELEASE_FUNC(wifi_app_wifi_scan_t);
+
 
 /*!
  * @brief Wifi Application Event Handler

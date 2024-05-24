@@ -5,12 +5,12 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.1.0-prerelase.1
+* @version 0.1.1-prerelase.1
 */
 #ifndef WIFI_MANAGER_H_
 #define WIFI_MANAGER_H_
 
-#include "wifiManager_private.h"
+#include "esp_err.h"
 
 /*!
 * @brief Wifi Manager Init function

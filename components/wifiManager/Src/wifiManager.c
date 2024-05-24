@@ -5,9 +5,15 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.2.0-prerelase.3+1 
+* @version 0.2.2-prerelase.3+1 
 */
+#include "esp_log.h"
+
 #include "wifiManager.h"
+#include "wifiManager_private.h"
+#include "wm_wifi.h"
+#include "wm_nvs.h"
+#include "wm_httpServer.h"
 
 static const char *TAG = "WIFI_MANAGER_MAIN";
 

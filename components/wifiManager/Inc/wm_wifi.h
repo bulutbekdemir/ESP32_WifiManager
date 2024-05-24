@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.1.0-prerelase.1+1
+* @version 0.1.1-prerelase.1+1
 */
 #ifndef WIFI_APP_H_
 #define WIFI_APP_H_
@@ -14,8 +14,7 @@
 #include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
 
-#include "wm_generalMacros.h"
-#include "wifiManager_private.h"
+#define REF_COUNT_FIELD int ref_count;
 
 #define WIFI_AP_SSID	CONFIG_WIFI_AP_SSID	// "ESP_WM_AP" is default
 #define WIFI_AP_PASS	CONFIG_WIFI_AP_PASS	// "Esp1234!" is default
@@ -52,15 +51,6 @@ typedef struct {
 	REF_COUNT_FIELD;
 }wifi_app_wifi_scan_t;
 
-/*!
-* @brief Struct initialization, deinitialization, retain and release functions
-* @note This functions meant to be used with struct types that are meant to be used with reference counting.
-*
-*/
-INIT_FUNC(wifi_app_wifi_scan_t);
-DEINIT_FUNC(wifi_app_wifi_scan_t);
-RETAIN_FUNC(wifi_app_wifi_scan_t); ///! TODO: Delete when release version is ready 
-RELEASE_FUNC(wifi_app_wifi_scan_t);
 
 /*!
 * @brief Wifi Manager Wifi Config Queue

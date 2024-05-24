@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.3.1-prerelase.7+1
+* @version 0.3.2-prerelase.7+1
 */
 #ifndef __WIFI_MANAGER_PRIVATE_H__
 #define __WIFI_MANAGER_PRIVATE_H__
@@ -14,16 +14,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
-#include "freertos/portmacro.h"
-
-#include "esp_err.h"
-#include "esp_log.h"
-#include "esp_event.h"
-#include "lwip/netdb.h"
-
-#include "wm_wifi.h"
-#include "wm_nvs.h"
-#include "wm_httpServer.h"
 
 //Wifi Manager Init task
 #define WIFI_MANAGER_INIT_TASK_PRIORITY			CONFIG_WIFI_MANAGER_INIT_TASK_PRIORITY // 6 is default

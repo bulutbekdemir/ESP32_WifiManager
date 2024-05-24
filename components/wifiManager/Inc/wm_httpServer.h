@@ -5,12 +5,11 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.2.0-prerelase.2+1
+* @version 0.2.1-prerelase.2+1
 */
 #ifndef WM_HTTPSERVER_H_
 #define WM_HTTPSERVER_H_
 
-#include "wifiManager_private.h"
 #include "esp_http_server.h"
 
 /*!

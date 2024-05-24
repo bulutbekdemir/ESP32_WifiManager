@@ -5,10 +5,12 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.4.3-prerelase.6+1
+* @version 0.4.6-prerelase.6+1
 */
-#include "wm_generalMacros.h"
+#include "esp_log.h"
+
 #include "wifiManager_private.h"
+#include "wm_generalMacros.h"
 #include "wm_httpServer.h"
 #include "wm_wifi.h"
 
@@ -34,6 +36,9 @@ extern const uint8_t jquery_3_3_1_min_js_start[] asm("_binary_jquery_3_3_1_min_j
 extern const uint8_t jquery_3_3_1_min_js_end[] asm("_binary_jquery_3_3_1_min_js_end");
 extern const uint8_t favicon_ico_start[] asm("_binary_favicon_ico_start");
 extern const uint8_t favicon_ico_end[] asm("_binary_favicon_ico_end");
+
+INIT_FUNC(wifi_app_wifi_scan_t);
+DEINIT_FUNC(wifi_app_wifi_scan_t);
 
 /*!
 * @brief HTTP Server Index Handler

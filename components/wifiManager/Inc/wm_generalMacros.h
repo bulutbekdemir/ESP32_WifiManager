@@ -25,7 +25,7 @@
 *    MyStruct_deinit(ptr);
 *
 * @copyright BSD 3-Clause License
-* @version 1.0.1+1
+* @version 1.1.2+1
 */
 
 #ifndef GENERALMACROS_H
@@ -38,12 +38,10 @@
 
 #if defined(CONFIG_USE_REF_COUNT) 
 
-#define REF_COUNT_FIELD int ref_count;
-
 #define HAS_REF_COUNT_FIELD(struct_type) \
     _Static_assert(!(offsetof(struct_type, ref_count) == 0), "Struct does not contain ref_count field");
 
-#define INIT_FUNC(struct_type) \
+#define DEFINE_INIT_FUNC(struct_type) \
     HAS_REF_COUNT_FIELD(struct_type) \
     struct_type *struct_type##_init() { \
         struct_type *ptr = (struct_type *)pvPortMalloc(sizeof(struct_type)); \
@@ -54,7 +52,7 @@
         return ptr; \
     }
 
-#define DEINIT_FUNC(struct_type) \
+#define DEFINE_DEINIT_FUNC(struct_type) \
     HAS_REF_COUNT_FIELD(struct_type) \
     void struct_type##_deinit(struct_type *ptr) { \
         if (ptr != NULL) { \
@@ -64,7 +62,7 @@
         } \
     }
 
-#define RETAIN_FUNC(struct_type) \
+#define DEFINE_RETAIN_FUNC(struct_type) \
     HAS_REF_COUNT_FIELD(struct_type) \
     void struct_type##_retain(struct_type *ptr) { \
         if (ptr != NULL) { \
@@ -72,7 +70,7 @@
         } \
     }
 
-#define RELEASE_FUNC(struct_type) \
+#define DEFINE_RELEASE_FUNC(struct_type) \
     HAS_REF_COUNT_FIELD(struct_type) \
     void struct_type##_release(struct_type *ptr) { \
         if (ptr != NULL) { \
@@ -81,6 +79,16 @@
             } \
         } \
     }
+
+#define INIT_FUNC(struct_type) DEFINE_INIT_FUNC(struct_type)
+#define DEINIT_FUNC(struct_type) DEFINE_DEINIT_FUNC(struct_type)
+#define RETAIN_FUNC(struct_type) DEFINE_RETAIN_FUNC(struct_type)
+#define RELEASE_FUNC(struct_type) DEFINE_RELEASE_FUNC(struct_type)
+
+#define DECLARE_INIT_FUNC(struct_type) extern struct_type *struct_type##_init();
+#define DECLARE_DEINIT_FUNC(struct_type) extern void struct_type##_deinit(struct_type *ptr);
+#define DECLARE_RETAIN_FUNC(struct_type) extern void struct_type##_retain(struct_type *ptr);
+#define DECLARE_RELEASE_FUNC(struct_type) extern void struct_type##_release(struct_type *ptr);
 
 #else
 
