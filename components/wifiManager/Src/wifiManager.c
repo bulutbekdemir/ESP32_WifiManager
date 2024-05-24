@@ -55,6 +55,8 @@ esp_err_t wifiManager_init ()
 	esp_err_t ret = ESP_FAIL;
 	BaseType_t xReturned = pdFAIL;
 
+	ESP_LOGI(TAG, "Wifi Manager Init Started");
+
 	///> Initialize Wifi Manager Main Event Group
 	wm_main_event_group = xEventGroupCreate();
 	if (wm_main_event_group == NULL)
@@ -87,6 +89,8 @@ esp_err_t wifiManager_init ()
 		return ret;
 	}
 
+	ESP_LOGI(TAG, "Starting Wifi Connect Task");
+
 	///> Initialize Wifi Connect Task
 	xReturned = xTaskCreatePinnedToCore(&wm_wifi_connect_task, "wm_wifi_connect_task", WIFI_CONNECT_TASK_STACK_SIZE, NULL, \
 																WIFI_CONNECT_TASK_PRIORITY, &wm_wifi_connect_task_handle	, WIFI_CONNECT_TASK_CORE_ID);
@@ -96,6 +100,8 @@ esp_err_t wifiManager_init ()
 		return ret;
 	}
 
+	ESP_LOGI(TAG, "Starting NVS Task");
+
 	///> Initialize NVS Taski
 	xReturned = xTaskCreatePinnedToCore(&wm_nvs_task, "wm_nvs_task", NVS_TASK_STACK_SIZE, NULL, \
 																NVS_TASK_PRIORITY, &wm_nvs_task_handle, NVS_TASK_CORE_ID);
@@ -104,6 +110,8 @@ esp_err_t wifiManager_init ()
 		ESP_LOGE(TAG, "Failed to create NVS Task");
 		return ret;
 	}
+
+	ESP_LOGI(TAG, "Wifi Manager Init Finished, Starting Wifi Manager Init Task");
 
 	xReturned = xTaskCreatePinnedToCore(&wm_init_task, "wm_init_task", WIFI_MANAGER_INIT_TASK_STACK_SIZE, NULL, \
 																WIFI_MANAGER_INIT_TASK_PRIORITY, &wm_init_task_handle, WIFI_MANAGER_INIT_TASK_CORE_ID);
@@ -118,6 +126,9 @@ esp_err_t wifiManager_init ()
 
 static void wm_init_task(void *pvParameters)
 {
+	ESP_LOGI(TAG, "Wifi Manager Init Task Started");
+	xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_READ_CREDS);
+
 	EventBits_t uxBits = xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_CREDS_FOUND | WM_EVENTG_NVS_CREDS_NOT_FOUND, \
 																			pdTRUE, pdFALSE, portMAX_DELAY);
 	if ((uxBits & WM_EVENTG_NVS_CREDS_FOUND) != 0)

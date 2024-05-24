@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.1.3-prerelase.2+1
+* @version 0.1.4-prerelase.2+3
 */
 #include "esp_wifi.h"
 #include "esp_log.h"
@@ -180,6 +180,7 @@ void wm_wifi_connect_task(void *pvParameters)
 
 	while (1)
 	{
+		ESP_LOGI(TAG, "Waiting for Wifi Connect Event");
 		uxBits = xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT | WM_EVENTG_WIFI_CONNECTED | WM_EVENTG_WIFI_CONNECT_FAIL, 
 																pdFALSE, pdFALSE, portMAX_DELAY); 
 		
@@ -267,12 +268,16 @@ static void wm_wifi_default_wifi_init(void)
 	//Initialize the TCP stack
 	ESP_ERROR_CHECK(esp_netif_init());
 
+	esp_sta_netif = esp_netif_create_default_wifi_sta();
+	esp_ap_netif = esp_netif_create_default_wifi_ap();
+
 	//Default wifi configuration
 	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-	esp_sta_netif = esp_netif_create_default_wifi_sta();
-	esp_ap_netif = esp_netif_create_default_wifi_ap();
+
+	ESP_LOGI(TAG, "Wifi Default Init Finished");
+
 }
 
 /*!
@@ -357,11 +362,12 @@ static void wm_wifi_connect_apsta(void)
  */
 static void wm_wifi_init(void)
 {
-	//Initialize the default wifi configuration
-	wm_wifi_default_wifi_init();
-
+	ESP_LOGI(TAG, "wm Wifi Init");
 	//Initialize the wifi event handler
 	wm_wifi_event_handler_init();
+
+	//Initialize the default wifi configuration
+	wm_wifi_default_wifi_init();
 }
 
 /*!
