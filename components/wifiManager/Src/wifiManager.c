@@ -128,6 +128,7 @@ static void wm_init_task(void *pvParameters)
 {
 	ESP_LOGI(TAG, "Wifi Manager Init Task Started");
 	xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_READ_CREDS);
+	xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_CLOSED);
 
 	EventBits_t uxBits = xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_CREDS_FOUND | WM_EVENTG_NVS_CREDS_NOT_FOUND, \
 																			pdTRUE, pdFALSE, portMAX_DELAY);
@@ -152,6 +153,7 @@ static void wm_init_task(void *pvParameters)
 		///>Wait for the HTTP Server to be opened
 		wm_http_server_start();
 		xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_OPEN, pdTRUE, pdFALSE, portMAX_DELAY);
+		xEventGroupClearBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_CLOSED);
 		ESP_LOGI(TAG, "Wifi Manager Init Task Finished");
 	}
 	xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_AP_CLOSED, pdTRUE, pdFALSE, portMAX_DELAY);

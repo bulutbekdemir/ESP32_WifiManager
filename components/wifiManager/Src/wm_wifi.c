@@ -237,6 +237,9 @@ void wm_wifi_connect_task(void *pvParameters)
 				BaseType_t xStatus = wm_wifi_ap_close();
 				if(xStatus == pdPASS)
 				{
+					xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_WRITE_CREDS);
+					wm_wifi_send_message(&wifi_config_msg.wifi_config);
+					xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE, pdTRUE, pdFALSE, portMAX_DELAY);
 					xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_AP_CLOSED);
 				}
 			}
