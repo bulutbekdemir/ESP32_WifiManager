@@ -49,14 +49,14 @@ function AddNew(ssid, authmode, rssi) {
 */
 function getWifiNetworks() {
   var xhr = new XMLHttpRequest();
-  var requestURL = "/scannedWifiNetworks";
+  var requestURL = "/listofScannedWifiNetworks";
   xhr.open('POST', requestURL, false);
-  xhr.send('scannedWifiNetworks');
+  xhr.send('listofScannedWifiNetworks');
 
   if (xhr.readyState == 4 && xhr.status == 200) {
     var response = JSON.parse(xhr.responseText);
 
-    getWifiNetworksList(response.ap_count);
+    getWifiNetworksList(response.ap_count, response);
 
     //AddNew(response.status, response.ap_count);
     //console.log(response);        
@@ -66,11 +66,7 @@ function getWifiNetworks() {
 /*!
 * Gets the wifi networks list
 */
-function getWifiNetworksList(list_size) {
-  var xhr = new XMLHttpRequest();
-  var requestURL = "/listofScannedWifiNetworks";
-  xhr.open('POST', requestURL, false);
-  xhr.send('ListscanWifiNetworks');
+function getWifiNetworksList(list_size, response) {
 
   if (xhr.readyState == 4 && xhr.status == 200) {
     var response = JSON.parse(xhr.responseText);

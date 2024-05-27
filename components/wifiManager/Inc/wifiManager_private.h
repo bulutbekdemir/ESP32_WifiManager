@@ -77,6 +77,7 @@ typedef enum
 	WM_EVENTG_WIFI_SCAN_DONE = 1 << 4, /*!< Flag for Wifi Scan Done */
 	WM_EVENTG_WIFI_SCAN_RESULT_SENT = 1 << 5, /*!< Flag for Wifi Scan Result Sent */
 	WM_EVENTG_WIFI_HTTP_CONNECT_FAIL = 1 << 6, /*!< Flag for Wifi HTTP Connect Fail */
+	WM_EVENTG_WIFI_CONNECT_FROM_HTTP = 1 << 7, /*!< Flag for Wifi Connect From HTTP */
 } wm_wifi_event_group_e; /*!< Wifi Event Group Enum */
 
 /*!

@@ -145,10 +145,10 @@ static void wm_init_task(void *pvParameters)
 		///>This function causes the APSTA mode to be enabled if HTTP Server is Closed flag is not set
 		xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL); /*!< Set the Wifi Connect Fail Flag */
 		///>Wait for the AP to be opened
-		xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_AP_OPEN, pdTRUE, pdFALSE, portMAX_DELAY);
+		xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_AP_OPEN, pdFALSE, pdFALSE, portMAX_DELAY);
 		///>Wait for the Scan Task to be opened
 		wm_scan_task_start();
-		xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_SCAN_TASK_OPEN, pdTRUE, pdFALSE, portMAX_DELAY);
+		xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_SCAN_TASK_OPEN, pdFALSE, pdFALSE, portMAX_DELAY);
 		///>Wait for the HTTP Server to be opened
 		wm_http_server_start();
 		xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_OPEN, pdTRUE, pdFALSE, portMAX_DELAY);

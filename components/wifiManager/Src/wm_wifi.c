@@ -62,6 +62,8 @@ static void wm_wifi_connect_apsta(void);
 static BaseType_t wm_wifi_ap_close(void);
 /// @brief Wifi Scan function declaration
 static void wm_wifi_scan(wifi_app_wifi_scan_t *wifi_scan_list);
+/// @brief Wifi Connect from HTTP function declaration
+static esp_err_t wm_wifi_connect_from_http(wifi_config_t *wifi_config);
 
 /*!
 * @brief Struct initialization, deinitialization, retain and release functions
@@ -84,7 +86,7 @@ RELEASE_FUNC(wifi_app_wifi_scan_t);
  */
 static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
-	uint8_t wifi_connect_retry = 0;
+	static uint8_t wifi_connect_retry = 0;
 	if(event_base == WIFI_EVENT)
 	{
 		switch(event_id)
@@ -100,15 +102,16 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 
 				wifi_event_sta_disconnected_t *wifi_event_sta_disconnected = (wifi_event_sta_disconnected_t *)malloc(sizeof(wifi_event_sta_disconnected_t));
 				*wifi_event_sta_disconnected = *((wifi_event_sta_disconnected_t *)event_data);
-
+				wifi_connect_retry++;
 				ESP_LOGW(TAG, "Reason: %d", wifi_event_sta_disconnected->reason);
 				if(wifi_connect_retry < MAX_CONNECTION_RETRIES)
 				{
+					ESP_LOGI(TAG, "Retrying Wifi Connection %d", wifi_connect_retry );  
 					esp_wifi_connect();
-					wifi_connect_retry++;  
 				}
 				else
 				{
+					ESP_LOGE(TAG, "Max Connection Retries Reached");
 					xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
 				}
 				break;
@@ -181,12 +184,28 @@ void wm_wifi_connect_task(void *pvParameters)
 	while (1)
 	{
 		ESP_LOGI(TAG, "Waiting for Wifi Connect Event");
-		uxBits = xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT | WM_EVENTG_WIFI_CONNECTED | WM_EVENTG_WIFI_CONNECT_FAIL, 
-																pdFALSE, pdFALSE, portMAX_DELAY); 
+		uxBits = xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT | WM_EVENTG_WIFI_CONNECTED | WM_EVENTG_WIFI_CONNECT_FAIL 
+																| WM_EVENTG_WIFI_CONNECT_FROM_HTTP, pdTRUE, pdFALSE, portMAX_DELAY); 
 		
 		xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
+		if ((uxBits & WM_EVENTG_WIFI_CONNECT_FROM_HTTP) == WM_EVENTG_WIFI_CONNECT_FROM_HTTP)
+		{
+			ESP_LOGI(TAG, "Wifi Connect Event Received");
 
-		if ((uxBits & WM_EVENTG_WIFI_CONNECT) == WM_EVENTG_WIFI_CONNECT)
+			// Receive the message from the queue
+			if (xQueueReceive(wm_queue_wifi_config_handle, &wifi_config_msg, portMAX_DELAY) == pdPASS)
+			{
+				ESP_LOGI(TAG, "SSID: %s", wifi_config_msg.wifi_config.sta.ssid);
+				ESP_LOGI(TAG, "Password: %s", wifi_config_msg.wifi_config.sta.password);
+
+				ret = wm_wifi_connect_from_http(&wifi_config_msg.wifi_config);
+				if (ret != ESP_OK)
+				{
+					ESP_LOGE(TAG, "Wifi Connect Failed because of %s", esp_err_to_name(ret));	
+				}
+			}
+		}
+		else if ((uxBits & WM_EVENTG_WIFI_CONNECT) == WM_EVENTG_WIFI_CONNECT)
 		{
 			ESP_LOGI(TAG, "Wifi Connect Event Received");
 
@@ -234,8 +253,11 @@ void wm_wifi_connect_task(void *pvParameters)
 			}else
 			{
 				xEventGroupClearBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
-				wm_wifi_connect_apsta();
-				xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_AP_OPEN);
+				if(WM_EVENTG_MAIN_AP_OPEN != (xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_AP_OPEN))
+				{
+					wm_wifi_connect_apsta();
+					xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_AP_OPEN);
+				}
 			}
 			
 		}
@@ -278,6 +300,44 @@ static void wm_wifi_default_wifi_init(void)
 
 	ESP_LOGI(TAG, "Wifi Default Init Finished");
 
+}
+
+/*!
+* @brief Wifi Connect from HTTP function
+* @note This function connects to the wifi network with the given wifi config.
+*
+* @param wifi_config Wifi config
+* @return esp_err_t Returns ESP_OK if the connection is successful otherwise ESP_FAIL
+*/
+static esp_err_t wm_wifi_connect_from_http(wifi_config_t *wifi_config_params)
+{
+	if(wifi_config_params->sta.password == NULL)
+	{
+			wifi_config_t wifi_config = {
+			.sta = {
+				.ssid = "",
+				.password = ""
+				.threshold.authmode = WIFI_AUTH_OPEN,
+			}
+		};
+	}else
+	{
+		wifi_config_t wifi_config = {
+			.sta = {
+				.ssid = "",
+				.password = ""
+			}
+		};
+	}
+
+	strncpy((char *)wifi_config.sta.ssid, (char *)wifi_config_params->sta.ssid, sizeof(wifi_config_params->sta.ssid) - 1);
+	strncpy((char *)wifi_config.sta.password, (char *)wifi_config_params->sta.password, sizeof(wifi_config_params->sta.password) - 1);
+
+	ESP_LOGI(TAG, "Connecting to SSID:%s with password:%s", wifi_config_params->sta.ssid, wifi_config_params->sta.password);
+
+	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
+	ESP_ERROR_CHECK(esp_wifi_connect());	
+	return ESP_OK;
 }
 
 /*!
@@ -395,7 +455,7 @@ static BaseType_t wm_wifi_ap_close(void)
 */
 void wm_wifi_scan_task(void *pvParameters)
 {
-	wm_queue_wifi_scan_handle = xQueueCreate(1, sizeof(wifi_app_wifi_scan_t *));
+	wm_queue_wifi_scan_handle = xQueueCreate(2, sizeof(wifi_app_wifi_scan_t *));
 
 	while (1)
 	{
@@ -404,9 +464,10 @@ void wm_wifi_scan_task(void *pvParameters)
 		wifi_app_wifi_scan_t *wifi_scan_list = wifi_app_wifi_scan_t_init();
 		wm_wifi_scan(wifi_scan_list);
 		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
-		xQueueSend(wm_queue_wifi_scan_handle, &wifi_scan_list, portMAX_DELAY);
-		wifi_app_wifi_scan_t_deinit(wifi_scan_list);
+		wm_wifi_send_scan_message(wifi_scan_list);
+		ESP_LOGI(TAG, "Wifi Scan Task Finished");
 		xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_RESULT_SENT, pdTRUE, pdFALSE, portMAX_DELAY);
+		wifi_app_wifi_scan_t_deinit(wifi_scan_list);
 	}
 }
 
@@ -423,10 +484,13 @@ static void wm_wifi_scan(wifi_app_wifi_scan_t *wifi_scan_list)
 	wifi_scan_list->ap_count = MAX_SCAN_LIST_SIZE;
 
 	ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
-	ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num((uint16_t *)&(*wifi_scan_list).ap_count));
-	ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records((uint16_t *) &(*wifi_scan_list).ap_count, (*wifi_scan_list).ap_records));
+	ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&(*wifi_scan_list).ap_count));
+	ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&(*wifi_scan_list).ap_count, (*wifi_scan_list).ap_records));
+
+	ESP_LOGI(TAG, "Number of APs found: %d %s", (*wifi_scan_list).ap_count, (*wifi_scan_list).ap_records[0].ssid);
 	
 	xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_DONE, pdTRUE, pdFALSE, portMAX_DELAY);
+	ESP_LOGI(TAG, "Scan done");
 	wifi_app_wifi_scan_t_release(wifi_scan_list);
 }
 
@@ -472,8 +536,9 @@ BaseType_t wm_wifi_receive_message(wifi_config_t *wifi_config)
 */
 BaseType_t wm_wifi_send_scan_message(wifi_app_wifi_scan_t *wifi_scan_msg)
 {
+	ESP_LOGI(TAG, "Sending Scan Message to Queue %s %d %s", wifi_scan_msg->ap_records[0].ssid, wifi_scan_msg->ap_records[0].rssi, wifi_scan_msg->ap_records[1].ssid);
 	// Send the message to the queue
-	return xQueueSend(wm_queue_wifi_scan_handle, &wifi_scan_msg, portMAX_DELAY);
+	return xQueueSend(wm_queue_wifi_scan_handle, wifi_scan_msg, portMAX_DELAY);
 }
 
 /*!
@@ -485,6 +550,7 @@ BaseType_t wm_wifi_send_scan_message(wifi_app_wifi_scan_t *wifi_scan_msg)
 */
 BaseType_t wm_wifi_receive_scan_message(wifi_app_wifi_scan_t *wifi_scan_msg)
 {
+	ESP_LOGI(TAG, "Waiting for Receive Scan Message");
 	// Receive the message from the queue
-	return xQueueReceive(wm_queue_wifi_scan_handle, &wifi_scan_msg, portMAX_DELAY);
+	return xQueueReceive(wm_queue_wifi_scan_handle, wifi_scan_msg, portMAX_DELAY);
 }

@@ -202,10 +202,12 @@ static esp_err_t http_server_wifi_connect_json_handler(httpd_req_t *req)
 
 			wm_wifi_send_message(wifi_config);
 
-			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT);
+			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FROM_HTTP);
 
 			free(ssid);
 			free(password);
+
+			xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECTED, pdFALSE, pdFALSE, portMAX_DELAY);
 		}else 
 		{
 			httpd_resp_send_503(req);
@@ -249,6 +251,7 @@ static esp_err_t http_server_wifi_scan_result_list_json_handler(httpd_req_t *req
 			wm_wifi_receive_scan_message(wifi_scan);
 			char wifiScanJSON[1000];
 			sprintf(wifiScanJSON, "{\"ap_count\":%d, \"ap_records\":[", wifi_scan->ap_count);
+			ESP_LOGI(TAG, "Wifi Scan Result List JSON Handler, wifi_scan->ap_count: %d %s", wifi_scan->ap_count, wifi_scan->ap_records[0].ssid);
 			for(int i = 0; i < wifi_scan->ap_count; i++)
 			{
 				char temp[100];
@@ -260,11 +263,13 @@ static esp_err_t http_server_wifi_scan_result_list_json_handler(httpd_req_t *req
 				}
 			}
 			strcat(wifiScanJSON, "]}");
+			ESP_LOGI(TAG, "Wifi Scan Result List JSON Handler, wifiScanJSON: %s", wifiScanJSON);
 			httpd_resp_set_type(req, "application/json");
 			httpd_resp_send(req, wifiScanJSON, strlen(wifiScanJSON));
 
 			wifi_app_wifi_scan_t_deinit(wifi_scan);
 			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_RESULT_SENT);		
+			ESP_LOGI(TAG, "Wifi Scan Result List JSON Handler, semaphore to be given");
 		}/* IDK if this is necessary or the right way to do it
 		else if ((xEventGetGroupBits(wm_wifi_event_group) & WM_EVENTG_WIFI_CONNECTED))
 		{
