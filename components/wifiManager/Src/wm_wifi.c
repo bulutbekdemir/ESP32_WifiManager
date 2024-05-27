@@ -112,6 +112,7 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 				else
 				{
 					ESP_LOGE(TAG, "Max Connection Retries Reached");
+					wifi_connect_retry = 0;
 					xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
 				}
 				break;
@@ -311,9 +312,11 @@ static void wm_wifi_default_wifi_init(void)
 */
 static esp_err_t wm_wifi_connect_from_http(wifi_config_t *wifi_config_params)
 {
-	if(sizeof(wifi_config_params->sta.password)/sizeof(wifi_config_params->sta.password[0]) == 1)
+	ESP_LOGI(TAG, "Connecting to Wifi from HTTP %s", wifi_config_params->sta.password);
+	if(strcmp((char *)wifi_config_params->sta.password, "\0") == 0)
 	{
-			wifi_config_t wifi_config = {
+		ESP_LOGI(TAG, "Connecting to Open Network");
+		wifi_config_t wifi_config = {
 			.sta = {
 				.ssid = "",
 				.password = "",

@@ -193,6 +193,10 @@ static esp_err_t http_server_wifi_connect_json_handler(httpd_req_t *req)
 				{
 					ESP_LOGI(TAG, "Password: %s", password);
 				}
+			}else
+			{
+				password = malloc(1);
+				password[0] = '\0';
 			}
 
 			wifi_config_t* wifi_config = malloc(sizeof(wifi_config_t));
