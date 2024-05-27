@@ -311,15 +311,23 @@ static void wm_wifi_default_wifi_init(void)
 */
 static esp_err_t wm_wifi_connect_from_http(wifi_config_t *wifi_config_params)
 {
-	if(wifi_config_params->sta.password == NULL)
+	if(sizeof(wifi_config_params->sta.password)/sizeof(wifi_config_params->sta.password[0]) == 1)
 	{
 			wifi_config_t wifi_config = {
 			.sta = {
 				.ssid = "",
-				.password = ""
+				.password = "",
 				.threshold.authmode = WIFI_AUTH_OPEN,
 			}
 		};
+		
+		strncpy((char *)wifi_config.sta.ssid, (char *)wifi_config_params->sta.ssid, sizeof(wifi_config_params->sta.ssid) - 1);
+
+		ESP_LOGI(TAG, "Connecting to SSID:%s with password:%s", wifi_config_params->sta.ssid, wifi_config_params->sta.password);
+
+		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
+		ESP_ERROR_CHECK(esp_wifi_connect());
+	
 	}else
 	{
 		wifi_config_t wifi_config = {
@@ -328,15 +336,16 @@ static esp_err_t wm_wifi_connect_from_http(wifi_config_t *wifi_config_params)
 				.password = ""
 			}
 		};
+
+		strncpy((char *)wifi_config.sta.ssid, (char *)wifi_config_params->sta.ssid, sizeof(wifi_config_params->sta.ssid) - 1);
+		strncpy((char *)wifi_config.sta.password, (char *)wifi_config_params->sta.password, sizeof(wifi_config_params->sta.password) - 1);
+
+		ESP_LOGI(TAG, "Connecting to SSID:%s with password:%s", wifi_config_params->sta.ssid, wifi_config_params->sta.password);
+
+		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
+		ESP_ERROR_CHECK(esp_wifi_connect());	
 	}
 
-	strncpy((char *)wifi_config.sta.ssid, (char *)wifi_config_params->sta.ssid, sizeof(wifi_config_params->sta.ssid) - 1);
-	strncpy((char *)wifi_config.sta.password, (char *)wifi_config_params->sta.password, sizeof(wifi_config_params->sta.password) - 1);
-
-	ESP_LOGI(TAG, "Connecting to SSID:%s with password:%s", wifi_config_params->sta.ssid, wifi_config_params->sta.password);
-
-	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
-	ESP_ERROR_CHECK(esp_wifi_connect());	
 	return ESP_OK;
 }
 

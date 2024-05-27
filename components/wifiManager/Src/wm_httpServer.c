@@ -207,7 +207,7 @@ static esp_err_t http_server_wifi_connect_json_handler(httpd_req_t *req)
 			free(ssid);
 			free(password);
 
-			xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECTED, pdFALSE, pdFALSE, portMAX_DELAY);
+			xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECTED | WM_EVENTG_WIFI_CONNECT_FAIL, pdFALSE, pdFALSE, portMAX_DELAY);
 		}else 
 		{
 			httpd_resp_send_503(req);
