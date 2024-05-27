@@ -467,7 +467,7 @@ static BaseType_t wm_wifi_ap_close(void)
 */
 void wm_wifi_scan_task(void *pvParameters)
 {
-	wm_queue_wifi_scan_handle = xQueueCreate(2, sizeof(wifi_app_wifi_scan_t *));
+	wm_queue_wifi_scan_handle = xQueueCreate(1, sizeof(wifi_app_wifi_scan_t));
 
 	while (1)
 	{
@@ -550,7 +550,7 @@ BaseType_t wm_wifi_send_scan_message(wifi_app_wifi_scan_t *wifi_scan_msg)
 {
 	ESP_LOGI(TAG, "Sending Scan Message to Queue %s %d %s", wifi_scan_msg->ap_records[0].ssid, wifi_scan_msg->ap_records[0].rssi, wifi_scan_msg->ap_records[1].ssid);
 	// Send the message to the queue
-	return xQueueSend(wm_queue_wifi_scan_handle, wifi_scan_msg, portMAX_DELAY);
+	return xQueueSend(wm_queue_wifi_scan_handle,(void *) wifi_scan_msg, portMAX_DELAY);
 }
 
 /*!
@@ -564,5 +564,5 @@ BaseType_t wm_wifi_receive_scan_message(wifi_app_wifi_scan_t *wifi_scan_msg)
 {
 	ESP_LOGI(TAG, "Waiting for Receive Scan Message");
 	// Receive the message from the queue
-	return xQueueReceive(wm_queue_wifi_scan_handle, wifi_scan_msg, portMAX_DELAY);
+	return xQueueReceive(wm_queue_wifi_scan_handle,(void *) wifi_scan_msg, portMAX_DELAY);
 }
