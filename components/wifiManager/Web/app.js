@@ -56,7 +56,9 @@ function getWifiNetworks() {
   if (xhr.readyState == 4 && xhr.status == 200) {
     var response = JSON.parse(xhr.responseText);
 
-    getWifiNetworksList(response.ap_count, response);
+    for (var i = 0; i < response.ap_count; i++) {
+      AddNew(response.ap_records[i].ssid, getWifiSecurityType(response.ap_records[i].authmode), response.ap_records[i].rssi);
+    }
 
     //AddNew(response.status, response.ap_count);
     //console.log(response);        
@@ -66,18 +68,14 @@ function getWifiNetworks() {
 /*!
 * Gets the wifi networks list
 */
-function getWifiNetworksList(list_size, response) {
+function getWifiNetworksList(list_size, responseTEXT) {
 
-  if (xhr.readyState == 4 && xhr.status == 200) {
-    var response = JSON.parse(xhr.responseText);
+  var response = JSON.parse(responseText);
 
-    console.log(response);
+  console.log(response);
 
-    for (var i = 0; i < list_size; i++) {
-      AddNew(response.ap_records[i].ssid, getWifiSecurityType(response.ap_records[i].authmode), response.ap_records[i].rssi);
-    }
 
-  }
+
 }
 
 /*!
