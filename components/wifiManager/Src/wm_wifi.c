@@ -103,17 +103,32 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 				wifi_event_sta_disconnected_t *wifi_event_sta_disconnected = (wifi_event_sta_disconnected_t *)malloc(sizeof(wifi_event_sta_disconnected_t));
 				*wifi_event_sta_disconnected = *((wifi_event_sta_disconnected_t *)event_data);
 				wifi_connect_retry++;
-				ESP_LOGW(TAG, "Reason: %d", wifi_event_sta_disconnected->reason);
-				if(wifi_connect_retry < MAX_CONNECTION_RETRIES)
+				switch (wifi_event_sta_disconnected->reason)
 				{
-					ESP_LOGI(TAG, "Retrying Wifi Connection %d", wifi_connect_retry );  
-					esp_wifi_connect();
-				}
-				else
-				{
-					ESP_LOGE(TAG, "Max Connection Retries Reached");
-					wifi_connect_retry = 0;
-					xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
+					case WIFI_REASON_NO_AP_FOUND:
+						ESP_LOGI(TAG, "No AP Found");
+						wifi_connect_retry = 0;
+						xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
+						break;
+					case WIFI_REASON_AUTH_FAIL:
+						ESP_LOGI(TAG, "Auth Fail");
+						wifi_connect_retry = 0;
+						xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
+						break;
+					default:
+						ESP_LOGW(TAG, "Reason: %d", wifi_event_sta_disconnected->reason); 
+						if(wifi_connect_retry < MAX_CONNECTION_RETRIES)
+						{
+							ESP_LOGI(TAG, "Retrying Wifi Connection %d", wifi_connect_retry );  
+							esp_wifi_connect();
+						}
+						else
+						{
+							ESP_LOGE(TAG, "Max Connection Retries Reached");
+							wifi_connect_retry = 0;
+							xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
+						}
+					break;
 				}
 				break;
 			case WIFI_EVENT_STA_AUTHMODE_CHANGE:
