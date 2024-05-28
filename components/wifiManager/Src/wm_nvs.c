@@ -5,8 +5,10 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.2.1-prerelase.0+1
+* @version 0.3.1-prerelase.2+2
 */
+#include "string.h"
+
 #include "esp_err.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
@@ -24,129 +26,68 @@ const char wm_nvs_namespace[] = "wifi_manager";
 */
 TaskHandle_t wm_nvs_task_handle;
 
+/*!
+* @brief NVS Read Function
+*
+* This function reads the credentials from the NVS.
+*
+* @return esp_err_t Returns ESP_OK if the credentials are found, ESP_FAIL otherwise.
+*/
 static esp_err_t wm_nvs_read ()
 {
-	char *ssid = (char *)malloc(MAX_SSID_LENGTH);
-	char *password = (char *)malloc(MAX_PASSWORD_LENGTH);
-
-	size_t ssid_len = MAX_SSID_LENGTH;
-	size_t password_len = MAX_PASSWORD_LENGTH;
+	wifi_config_t *wifi_config = (wifi_config_t *)malloc(sizeof(wifi_config_t));
 
 	nvs_handle_t nvs_handle;
 	esp_err_t err;
 
+	if(nvs_open(wm_nvs_namespace, NVS_READONLY, &nvs_handle) == ESP_OK)
+	{
+		size_t ssid_len = 0;
+		size_t pass_len = 0;
 
-	err = nvs_open(wm_nvs_namespace, NVS_READONLY, &nvs_handle);
-	if (err != ESP_OK) {
-			ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
-			xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_FAIL);
+		if(nvs_get_blob(nvs_handle, "ssid", NULL, &ssid_len) == ESP_OK)
+		{
+			if(nvs_get_blob(nvs_handle, "ssid", wifi_config->sta.ssid, &ssid_len) == ESP_OK)
+			{
+				ESP_LOGI(TAG, "SSID: %s", wifi_config->sta.ssid);
+			}
+		}else {
+			ESP_LOGE(TAG, "SSID Not Found");
 			return ESP_FAIL;
+		}
+
+		if(nvs_get_blob(nvs_handle, "password", NULL, &pass_len) == ESP_OK)
+		{
+			if(nvs_get_blob(nvs_handle, "password", wifi_config->sta.password, &pass_len) == ESP_OK)
+			{
+				ESP_LOGI(TAG, "Password: %s", wifi_config->sta.password);
+			}
+		}else {
+			ESP_LOGE(TAG, "Password Not Found");
+			wm_wifi_send_message(wifi_config);
+			return ESP_OK;
+		}
+
+		nvs_close(nvs_handle);
+		wm_wifi_send_message(wifi_config);
+	
+		return ESP_OK;
+	}else {
+		ESP_LOGE(TAG, "NVS Open Failed");
+		return ESP_FAIL;
 	}
-
-	err = nvs_get_str(nvs_handle, "ssid", ssid, &ssid_len);
-	if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {
-			ESP_LOGE(TAG, "Error (%s) reading SSID!", esp_err_to_name(err));
-			return ESP_FAIL;
-	}
-
-	err = nvs_get_str(nvs_handle, "password", password, &password_len);
-	if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {
-			ESP_LOGE(TAG, "Error (%s) reading password!", esp_err_to_name(err));
-	}
-
-	nvs_close(nvs_handle);
-
-  wifi_config_t wifi_config = {
-		.sta = {
-			.ssid = {(uint8_t )*ssid},
-			.password = {(uint8_t )*password}
-		} 
-	};
-
-	wm_wifi_send_message(&wifi_config);
-
-	ESP_LOGI(TAG, "SSID: %s", ssid);
-	ESP_LOGI(TAG, "Password: %s", password);
-
-	free(ssid);
-	free(password);
-
-	return ESP_OK;
+	return ESP_FAIL;
 }
 
-/*!
-* @brief NVS Write Function
-*
-* This function writes the wifi credentials to the NVS.
-*/
-static void wm_nvs_write ()
+static void wm_nvs_write()
 {
-	wifi_config_t wifi_config;
-	wm_wifi_receive_message(&wifi_config);
-
-	nvs_handle_t nvs_handle;
-	esp_err_t err;
-
-	err = nvs_open(wm_nvs_namespace, NVS_READWRITE, &nvs_handle);
-	if (err != ESP_OK) {
-			ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
-			xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_FAIL);
-			return;
-	}
-
-	err = nvs_set_str(nvs_handle, "ssid", (char *)wifi_config.sta.ssid);
-	if (err != ESP_OK) {
-			ESP_LOGE(TAG, "Error (%s) writing SSID!", esp_err_to_name(err));
-	}
-
-	err = nvs_set_str(nvs_handle, "password", (char *)wifi_config.sta.password);
-	if (err != ESP_OK) {
-			ESP_LOGE(TAG, "Error (%s) writing password!", esp_err_to_name(err));
-	}
-
-	err = nvs_commit(nvs_handle);
-	if (err != ESP_OK) {
-			ESP_LOGE(TAG, "Error (%s) committing NVS!", esp_err_to_name(err));
-	}
-
-	nvs_close(nvs_handle);
-
-	xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE);
+	__asm("nop");
 }
 
-
-/*!
-* @brief NVS Clear Function
-*
-* This function clears the wifi credentials from the NVS.
-*/
-void wm_nvs_clear ()
+static void wm_nvs_clear()
 {
-	nvs_handle_t nvs_handle;
-	esp_err_t err;
-
-	err = nvs_open(wm_nvs_namespace, NVS_READWRITE, &nvs_handle);
-	if (err != ESP_OK) {
-			ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
-			xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_FAIL);
-			return;
-	}
-
-	err = nvs_erase_all(nvs_handle);
-	if (err != ESP_OK) {
-			ESP_LOGE(TAG, "Error (%s) erasing NVS!", esp_err_to_name(err));
-	}
-
-	err = nvs_commit(nvs_handle);
-	if (err != ESP_OK) {
-			ESP_LOGE(TAG, "Error (%s) committing NVS!", esp_err_to_name(err));
-	}
-
-	nvs_close(nvs_handle);
-
-	xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE);
+	__asm("nop");
 }
-
 
 void wm_nvs_task(void *pvParameters)
 {

@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.1.4-prerelase.2+3
+* @version 0.1.1-prerelase.2+4
 */
 #include "esp_wifi.h"
 #include "esp_log.h"
@@ -242,7 +242,8 @@ void wm_wifi_connect_task(void *pvParameters)
 			ESP_LOGI(TAG, "Wifi Connect Event Received");
 			EventBits_t mainBits;
 			mainBits = xEventGroupGetBits(wm_main_event_group);
-			if((mainBits & WM_EVENTG_MAIN_HTTP_CLOSED) == WM_EVENTG_MAIN_HTTP_CLOSED)
+			if(((mainBits & WM_EVENTG_MAIN_HTTP_CLOSED) == WM_EVENTG_MAIN_HTTP_CLOSED) && 
+						((mainBits & WM_EVENTG_MAIN_HTTP_OPEN) != WM_EVENTG_MAIN_HTTP_OPEN))
 			{
 				__asm("nop");
 			}else
@@ -263,7 +264,8 @@ void wm_wifi_connect_task(void *pvParameters)
 			ESP_LOGI(TAG, "Wifi Connect Fail Event Received");
 		  EventBits_t mainBits; 
 			mainBits = xEventGroupGetBits(wm_main_event_group);
-			if((mainBits & WM_EVENTG_MAIN_HTTP_CLOSED) == WM_EVENTG_MAIN_HTTP_CLOSED)
+			if(((mainBits & WM_EVENTG_MAIN_HTTP_CLOSED) == WM_EVENTG_MAIN_HTTP_CLOSED) && 
+						((mainBits & WM_EVENTG_MAIN_HTTP_OPEN) != WM_EVENTG_MAIN_HTTP_OPEN))
 			{
 				xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_CLEAR_CREDS);
 				xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE, pdTRUE, pdFALSE, portMAX_DELAY);

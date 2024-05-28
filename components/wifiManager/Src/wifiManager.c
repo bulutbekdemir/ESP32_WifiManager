@@ -5,7 +5,7 @@
 * @author Bulut Bekdemir
 * 
 * @copyright BSD 3-Clause License
-* @version 0.2.3-prerelase.3+3 
+* @version 0.2.4-prerelase.3+4 
 */
 #include "esp_log.h"
 
@@ -128,7 +128,6 @@ static void wm_init_task(void *pvParameters)
 {
 	ESP_LOGI(TAG, "Wifi Manager Init Task Started");
 	xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_READ_CREDS);
-	xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_CLOSED);
 
 	EventBits_t uxBits = xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_CREDS_FOUND | WM_EVENTG_NVS_CREDS_NOT_FOUND, \
 																			pdTRUE, pdFALSE, portMAX_DELAY);
