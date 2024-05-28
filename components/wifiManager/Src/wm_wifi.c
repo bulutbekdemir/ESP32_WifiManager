@@ -105,17 +105,23 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 
 				switch (wifi_event_sta_disconnected->reason)
 				{
+					/*
 					case WIFI_REASON_NO_AP_FOUND:
 						ESP_LOGI(TAG, "No AP Found");
 						xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
-						break;
+						break;*/
 					case WIFI_REASON_AUTH_FAIL:
 						ESP_LOGI(TAG, "Auth Fail");
 						xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
 						break;
 					default:
 						wifi_connect_retry++;
-						ESP_LOGW(TAG, "Reason: %d", wifi_event_sta_disconnected->reason); 
+						if(wifi_event_sta_disconnected->reason == WIFI_REASON_NO_AP_FOUND)
+						{
+							ESP_LOGW(TAG, "Reason: NO_AP_FOUND");
+						}else{
+							ESP_LOGW(TAG, "Reason: %d", wifi_event_sta_disconnected->reason); 
+						}
 						if(wifi_connect_retry < MAX_CONNECTION_RETRIES)
 						{
 							ESP_LOGI(TAG, "Retrying Wifi Connection %d", wifi_connect_retry );  
@@ -242,8 +248,8 @@ void wm_wifi_connect_task(void *pvParameters)
 			ESP_LOGI(TAG, "Wifi Connect Event Received");
 			EventBits_t mainBits;
 			mainBits = xEventGroupGetBits(wm_main_event_group);
-			if(((mainBits & WM_EVENTG_MAIN_HTTP_CLOSED) == WM_EVENTG_MAIN_HTTP_CLOSED) && 
-						((mainBits & WM_EVENTG_MAIN_HTTP_OPEN) != WM_EVENTG_MAIN_HTTP_OPEN))
+			if(((mainBits & WM_EVENTG_MAIN_HTTP_INIT_DONE) == WM_EVENTG_MAIN_HTTP_INIT_DONE) && 
+				(((mainBits & WM_EVENTG_MAIN_HTTP_CLOSED) == WM_EVENTG_MAIN_HTTP_CLOSED)))
 			{
 				__asm("nop");
 			}else
@@ -256,16 +262,16 @@ void wm_wifi_connect_task(void *pvParameters)
 					wm_wifi_send_message(&wifi_config_msg.wifi_config);
 					xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE, pdTRUE, pdFALSE, portMAX_DELAY);
 					xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_AP_CLOSED);
+					xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_CLOSE);
 				}
 			}
 		}
 		else if ((uxBits & WM_EVENTG_WIFI_CONNECT_FAIL) == WM_EVENTG_WIFI_CONNECT_FAIL)
 		{
 			ESP_LOGI(TAG, "Wifi Connect Fail Event Received");
-		  EventBits_t mainBits; 
-			mainBits = xEventGroupGetBits(wm_main_event_group);
-			if(((mainBits & WM_EVENTG_MAIN_HTTP_CLOSED) == WM_EVENTG_MAIN_HTTP_CLOSED) && 
-						((mainBits & WM_EVENTG_MAIN_HTTP_OPEN) != WM_EVENTG_MAIN_HTTP_OPEN))
+			EventBits_t mainBits = xEventGroupGetBits(wm_main_event_group);
+			if(((mainBits & WM_EVENTG_MAIN_HTTP_INIT_DONE) == WM_EVENTG_MAIN_HTTP_INIT_DONE) && 
+				(((mainBits & WM_EVENTG_MAIN_HTTP_CLOSED) == WM_EVENTG_MAIN_HTTP_CLOSED)))
 			{
 				xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_CLEAR_CREDS);
 				xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE, pdTRUE, pdFALSE, portMAX_DELAY);
@@ -276,10 +282,18 @@ void wm_wifi_connect_task(void *pvParameters)
 				if(WM_EVENTG_MAIN_AP_OPEN != (xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_AP_OPEN))
 				{
 					wm_wifi_connect_apsta();
+					if((xEventGroupGetBits(wm_nvs_event_group) & WM_EVENTG_NVS_CREDS_FOUND) == WM_EVENTG_NVS_CREDS_FOUND)
+					{
+						xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_CLEAR_CREDS);
+						xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE, pdTRUE, pdFALSE, portMAX_DELAY);
+					}
 					xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_AP_OPEN);
+					if((xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_INIT_DONE) == WM_EVENTG_MAIN_HTTP_INIT_DONE)
+					{
+						xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_HTTP_INIT);
+					}
 				}
 			}
-			
 		}
 		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
 		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT);
@@ -432,18 +446,20 @@ static void wm_wifi_connect_apsta(void)
 	inet_pton(AF_INET, WIFI_AP_IP_GATEWAY, &ap_ip_info.gw); ///> Assign the Static Ip ,gateway and netmask address'
 	inet_pton(AF_INET, WIFI_AP_IP_NETMASK, &ap_ip_info.netmask);
 	ESP_ERROR_CHECK(esp_netif_set_ip_info(esp_ap_netif, &ap_ip_info));
-	ESP_ERROR_CHECK(esp_netif_dhcps_start(esp_ap_netif)); ///> start the DHCP server after updating DHCP related information
 
 	ESP_LOGI(TAG, "Setting up AP with SSID:%s and password:%s", wifi_ap_config.ap.ssid, wifi_ap_config.ap.password);
 	ESP_LOGI(TAG, "AP IP Address: %s", WIFI_AP_IP_ADDR);
 	ESP_LOGI(TAG, "AP Gateway: %s", WIFI_AP_IP_GATEWAY);
 	ESP_LOGI(TAG, "AP Netmask: %s", WIFI_AP_IP_NETMASK);
 
+	ESP_ERROR_CHECK(esp_wifi_stop()); ///> Stop the wifi
+
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA)); ///> Set the wifi mode to Access Point and Station
 	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_ap_config)); ///> Set the configuration for the Access Point
 	ESP_ERROR_CHECK(esp_wifi_set_bandwidth(ESP_IF_WIFI_AP, WIFI_BANDWIDTH)); ///> Set the bandwidth for the Access Point, default is 20Mhz best for low change of interference
 	ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_STA_POWER_SAVE)); ///> Set the power save mode for the wifi, default is NONE
 
+	ESP_ERROR_CHECK(esp_netif_dhcps_start(esp_ap_netif)); ///> start the DHCP server after updating DHCP related information
 	ESP_ERROR_CHECK(esp_wifi_start()); ///> Start the wifi
 }
 	

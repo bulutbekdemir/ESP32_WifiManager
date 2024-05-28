@@ -38,7 +38,6 @@ static esp_err_t wm_nvs_read ()
 	wifi_config_t *wifi_config = (wifi_config_t *)malloc(sizeof(wifi_config_t));
 
 	nvs_handle_t nvs_handle;
-	esp_err_t err;
 
 	if(nvs_open(wm_nvs_namespace, NVS_READONLY, &nvs_handle) == ESP_OK)
 	{
@@ -79,14 +78,73 @@ static esp_err_t wm_nvs_read ()
 	return ESP_FAIL;
 }
 
+/*!
+* @brief NVS Write Function
+*
+* This function writes the credentials to the NVS.
+*
+*/
 static void wm_nvs_write()
 {
-	__asm("nop");
+	wifi_config_t *wifi_config = (wifi_config_t *)malloc(sizeof(wifi_config_t));
+	wm_wifi_receive_message(wifi_config);
+
+	nvs_handle_t nvs_handle;
+
+	if(nvs_open(wm_nvs_namespace, NVS_READWRITE, &nvs_handle) == ESP_OK)
+	{
+		if(nvs_set_blob(nvs_handle, "ssid", wifi_config->sta.ssid, MAX_SSID_LEN) == ESP_OK)
+		{
+			ESP_LOGI(TAG, "SSID: %s", wifi_config->sta.ssid);
+		}else {
+			ESP_LOGE(TAG, "SSID Write Failed");
+		}
+
+		if(nvs_set_blob(nvs_handle, "password", wifi_config->sta.password, MAX_PASSWORD_LENGTH) == ESP_OK)
+		{
+			ESP_LOGI(TAG, "Password: %s", wifi_config->sta.password);
+		}else {
+			ESP_LOGE(TAG, "Password Write Failed");
+		}
+
+		nvs_close(nvs_handle);
+		xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE);
+	}else {
+		ESP_LOGE(TAG, "NVS Open Failed");
+	}
 }
 
+/*!
+* @brief NVS Clear Function
+*
+* This function clears the credentials from the NVS.
+*
+*/
 static void wm_nvs_clear()
 {
-	__asm("nop");
+	nvs_handle_t nvs_handle;
+
+	if(nvs_open(wm_nvs_namespace, NVS_READWRITE, &nvs_handle) == ESP_OK)
+	{
+		if(nvs_erase_key(nvs_handle, "ssid") == ESP_OK)
+		{
+			ESP_LOGI(TAG, "SSID Cleared");
+		}else {
+			ESP_LOGE(TAG, "SSID Clear Failed");
+		}
+
+		if(nvs_erase_key(nvs_handle, "password") == ESP_OK)
+		{
+			ESP_LOGI(TAG, "Password Cleared");
+		}else {
+			ESP_LOGE(TAG, "Password Clear Failed");
+		}
+
+		nvs_close(nvs_handle);
+		xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE);
+	}else {
+		ESP_LOGE(TAG, "NVS Open Failed");
+	}
 }
 
 void wm_nvs_task(void *pvParameters)

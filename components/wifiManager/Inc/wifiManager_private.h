@@ -55,6 +55,7 @@ typedef enum
 	WM_EVENTG_MAIN_SCAN_TASK_OPEN = 1 << 4, /*!< Flag for Start Task Sequencer Scan Task Open */
 	WM_EVENTG_MAIN_SCAN_TASK_CLOSED = 1 << 5, /*!< Flag for Start Task Sequencer Scan Task Closed */
 	WM_EVENTG_MAIN_HTTP_BLOCK_REQ = 1 << 6, /*!< Flag for HTTP Server Block Request */
+	WM_EVENTG_MAIN_HTTP_INIT_DONE = 1 << 7, /*!< Flag for HTTP Server Init */
 } wm_main_event_group_e; /*!< Wifi Manager Main Event Group Enum */
 
 /*!
@@ -100,6 +101,8 @@ typedef enum
 	WM_EVENTG_NVS_DONE = 1 << 4, /*!< Flag for NVS Task Finished */
 	WM_EVENTG_NVS_CLEAR_CREDS = 1 << 5, /*!< Flag for NVS Clear Creds */
 	WM_EVENTG_NVS_FAIL = 1 << 6, /*!< Flag for NVS Task Fail */
+	WM_EVENTG_NVS_HTTP_INIT = 1 << 7, /*!< Flag for NVS Event Group HTTP Init */
+	WM_EVENTG_NVS_CLOSE = 1 << 8, /*!< Flag for Wifi Manager Task */
 } wm_nvs_event_group_e; /*!< Wifi Manager NVS Event Group Enum */
 
 /*!
