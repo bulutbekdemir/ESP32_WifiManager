@@ -41,6 +41,12 @@ EventGroupHandle_t wm_wifi_event_group; /*!< Event Group Handle */
 */
 EventGroupHandle_t wm_main_event_group; /*!< Event Group Handle */
 
+/*!
+* @brief Wifi Manager Wifi Task Handler
+*
+*/
+EventGroupHandle_t wm_task_event_group;
+
 ///>Function Prototypes
 static void wm_http_server_start(void);
 static void wm_http_server_stop(void);
@@ -78,6 +84,14 @@ esp_err_t wifiManager_init ()
 	if (wm_nvs_event_group == NULL)
 	{
 		ESP_LOGE(TAG, "Failed to create NVS Event Group");
+		return ret;
+	}
+
+	///> Initialize Task Event Group
+	wm_task_event_group = xEventGroupCreate();
+	if (wm_task_event_group == NULL)
+	{
+		ESP_LOGE(TAG, "Failed to create Task Event Group");
 		return ret;
 	}
 
@@ -124,49 +138,39 @@ esp_err_t wifiManager_init ()
 	return ESP_OK;
 }
 
+/*!
+* @brief Wifi Manager Init Task
+*
+* This function is the main task for the Wifi Manager.
+*/
 static void wm_init_task(void *pvParameters)
 {
 	ESP_LOGI(TAG, "Wifi Manager Init Task Started");
 	xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_READ_CREDS);
 	while (1)
 	{
-		EventBits_t uxBits = xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_CREDS_FOUND | WM_EVENTG_NVS_CREDS_NOT_FOUND | WM_EVENTG_NVS_HTTP_INIT | WM_EVENTG_NVS_CLOSE, \
-																							pdTRUE, pdFALSE, portMAX_DELAY);
-		if ((uxBits & WM_EVENTG_NVS_CREDS_FOUND) != 0)
+		EventBits_t uxBits = xEventGroupWaitBits(wm_task_event_group, 	WM_EVENTG_TASK_ALL_INIT | WM_EVENTG_TASK_WIFI_INIT 
+																						| WM_EVENTG_TASK_DEINIT, pdTRUE, pdFALSE, portMAX_DELAY);
+
+		if ((uxBits & WM_EVENTG_TASK_WIFI_INIT) != 0)
 		{
-			/*! Do not start the HTTP Server and related tasks if the NVS Credentials are found */
-			ESP_LOGI(TAG, "NVS Credentials Found");
-			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT);
-			xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECTED, pdTRUE, pdFALSE, portMAX_DELAY);
-		}
-		else if (((uxBits & WM_EVENTG_NVS_CREDS_NOT_FOUND) != 0) || 
-						(((uxBits & WM_EVENTG_NVS_HTTP_INIT) !=0) && !((xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_INIT_DONE) != 0) ))
-		{
-			/*! Start the HTTP Server and related tasks if the NVS Credentials are not found */
-			ESP_LOGI(TAG, "NVS Credentials Not Found, Starting HTTP Server Init Process");
-			///>This function causes the APSTA mode to be enabled if HTTP Server is Closed flag is not set
-			if(!(xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_AP_OPEN))
-			{
-				xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL); /*!< Set the Wifi Connect Fail Flag */
-				///>Wait for the AP to be opened
-				xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_AP_OPEN, pdFALSE, pdFALSE, portMAX_DELAY);	
-			}
-			///>Wait for the Scan Task to be opened
+			ESP_LOGI(TAG , "NVS Creds Found, Starting only Wifi Application");
+			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FROM_NVS);
+		}else if ((uxBits & WM_EVENTG_TASK_ALL_INIT) != 0){
+			ESP_LOGI(TAG, "NVS Creds Not Found, Starting Wifi Application and HTTP Server");
 			wm_scan_task_start();
 			xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_SCAN_TASK_OPEN, pdFALSE, pdFALSE, portMAX_DELAY);
-			///>Wait for the HTTP Server to be opened
 			wm_http_server_start();
 			xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_OPEN, pdFALSE, pdFALSE, portMAX_DELAY);
-			xEventGroupClearBits(wm_nvs_event_group, WM_EVENTG_NVS_CREDS_NOT_FOUND);
-			xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_INIT_DONE);
-			ESP_LOGI(TAG, "Wifi Manager HTTP Server Init Done");
-		}else {
-			xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
+			ESP_LOGI(TAG, "ALL Init Done!");
+			xEventGroupSetBits(wm_task_event_group, WM_EVENTG_TASK_ALL_INIT_DONE);
+		}else if ((uxBits & WM_EVENTG_TASK_DEINIT) != 0){
+			ESP_LOGI(TAG, "Deinit Task Triggered");
 			wm_http_server_stop();
-			xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_CLOSED, pdFALSE, pdFALSE, portMAX_DELAY);
 			wm_scan_task_stop();
-			xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_SCAN_TASK_CLOSED, pdTRUE, pdFALSE, portMAX_DELAY);
-		}	
+			xEventGroupSetBits(wm_task_event_group, WM_EVENTG_TASK_DEINIT_DONE);
+			vTaskDelete(NULL);
+		}
 	}
 }
 
@@ -198,6 +202,11 @@ static void wm_http_server_stop(void)
 	{
 		ESP_LOGE(TAG, "Failed to stop HTTP Server");
 		return;
+	}
+	vQueueDelete(wm_http_event_group);
+	if (wm_http_event_group != NULL)
+	{
+		wm_http_event_group = NULL;
 	}
 	xEventGroupClearBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_OPEN);
 	xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_CLOSED);

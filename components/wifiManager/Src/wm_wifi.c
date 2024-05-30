@@ -102,7 +102,7 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 
 				wifi_event_sta_disconnected_t *wifi_event_sta_disconnected = (wifi_event_sta_disconnected_t *)malloc(sizeof(wifi_event_sta_disconnected_t));
 				*wifi_event_sta_disconnected = *((wifi_event_sta_disconnected_t *)event_data);
-
+				EventBits_t mainStaBits = xEventGroupGetBits(wm_main_event_group);
 				switch (wifi_event_sta_disconnected->reason)
 				{
 					/*
@@ -112,7 +112,13 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 						break;*/
 					case WIFI_REASON_AUTH_FAIL:
 						ESP_LOGI(TAG, "Auth Fail");
-						xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
+						if((mainStaBits & WM_EVENTG_MAIN_HTTP_OPEN) == WM_EVENTG_MAIN_HTTP_OPEN)
+						{
+							xEventGroupSetBits(wm_http_event_group, WM_EVENTG_HTTP_WIFI_AUTH_FAIL);
+						}else
+						{
+							xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
+						}
 						break;
 					default:
 						wifi_connect_retry++;
@@ -205,10 +211,10 @@ void wm_wifi_connect_task(void *pvParameters)
 	while (1)
 	{
 		ESP_LOGI(TAG, "Waiting for Wifi Connect Event");
-		uxBits = xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT | WM_EVENTG_WIFI_CONNECTED | WM_EVENTG_WIFI_CONNECT_FAIL 
+		uxBits = xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FROM_NVS | WM_EVENTG_WIFI_CONNECTED | WM_EVENTG_WIFI_CONNECT_FAIL 
 																| WM_EVENTG_WIFI_CONNECT_FROM_HTTP, pdTRUE, pdFALSE, portMAX_DELAY); 
 		
-		xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
+		xEventGroupSetBits(wm_http_event_group, WM_EVENTG_HTTP_BLOCK_REQ);
 		if ((uxBits & WM_EVENTG_WIFI_CONNECT_FROM_HTTP) == WM_EVENTG_WIFI_CONNECT_FROM_HTTP)
 		{
 			ESP_LOGI(TAG, "Wifi Connect Event Received");
@@ -226,7 +232,7 @@ void wm_wifi_connect_task(void *pvParameters)
 				}
 			}
 		}
-		else if ((uxBits & WM_EVENTG_WIFI_CONNECT) == WM_EVENTG_WIFI_CONNECT)
+		else if ((uxBits & WM_EVENTG_WIFI_CONNECT_FROM_NVS) == WM_EVENTG_WIFI_CONNECT_FROM_NVS)
 		{
 			ESP_LOGI(TAG, "Wifi Connect Event Received");
 
@@ -247,14 +253,10 @@ void wm_wifi_connect_task(void *pvParameters)
 		{
 			ESP_LOGI(TAG, "Wifi Connect Event Received");
 			EventBits_t mainBits;
-			mainBits = xEventGroupGetBits(wm_main_event_group);
-			if(((mainBits & WM_EVENTG_MAIN_HTTP_INIT_DONE) == WM_EVENTG_MAIN_HTTP_INIT_DONE) && 
-				(((mainBits & WM_EVENTG_MAIN_HTTP_CLOSED) == WM_EVENTG_MAIN_HTTP_CLOSED)))
+			mainBits = xEventGroupGetBits(wm_task_event_group);
+			if((mainBits & WM_EVENTG_TASK_ALL_INIT_DONE) != 1)
 			{
-				__asm("nop");
-			}else
-			{
-				xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
+				xEventGroupSetBits(wm_http_event_group, WM_EVENTG_HTTP_BLOCK_REQ);
 				BaseType_t xStatus = wm_wifi_ap_close();
 				if(xStatus == pdPASS)
 				{
@@ -262,42 +264,35 @@ void wm_wifi_connect_task(void *pvParameters)
 					wm_wifi_send_message(&wifi_config_msg.wifi_config);
 					xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE, pdTRUE, pdFALSE, portMAX_DELAY);
 					xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_AP_CLOSED);
-					xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_CLOSE);
+					xEventGroupSetBits(wm_task_event_group, WM_EVENTG_TASK_DEINIT);
 				}
-			}
+			}	
 		}
 		else if ((uxBits & WM_EVENTG_WIFI_CONNECT_FAIL) == WM_EVENTG_WIFI_CONNECT_FAIL)
 		{
-			ESP_LOGI(TAG, "Wifi Connect Fail Event Received");
+			ESP_LOGE(TAG, "Wifi Connect Failed");
 			EventBits_t mainBits = xEventGroupGetBits(wm_main_event_group);
-			if(((mainBits & WM_EVENTG_MAIN_HTTP_INIT_DONE) == WM_EVENTG_MAIN_HTTP_INIT_DONE) && 
-				(((mainBits & WM_EVENTG_MAIN_HTTP_CLOSED) == WM_EVENTG_MAIN_HTTP_CLOSED)))
+			if((xEventGroupGetBits(wm_task_event_group) & WM_EVENTG_TASK_DEINIT_DONE) == WM_EVENTG_TASK_DEINIT_DONE)
 			{
+				ESP_LOGW(TAG, "Wifi Connect Failed when HTTP already deinited, Restarting");
 				xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_CLEAR_CREDS);
 				xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE, pdTRUE, pdFALSE, portMAX_DELAY);
-				esp_restart();
-			}else
+				esp_restart(); 
+			}else if((xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_OPEN) == WM_EVENTG_MAIN_HTTP_OPEN)
 			{
-				xEventGroupClearBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
-				if(WM_EVENTG_MAIN_AP_OPEN != (xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_AP_OPEN))
+				xEventGroupSetBits(wm_http_event_group, WM_EVENTG_HTTP_WIFI_CONNECT_FAIL);
+			}else 
+			{
+				wm_wifi_connect_apsta();
+				if((xEventGroupGetBits(wm_nvs_event_group) & WM_EVENTG_NVS_CREDS_FOUND) == WM_EVENTG_NVS_CREDS_FOUND)
 				{
-					wm_wifi_connect_apsta();
-					if((xEventGroupGetBits(wm_nvs_event_group) & WM_EVENTG_NVS_CREDS_FOUND) == WM_EVENTG_NVS_CREDS_FOUND)
-					{
-						xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_CLEAR_CREDS);
-						xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE, pdTRUE, pdFALSE, portMAX_DELAY);
-					}
-					xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_AP_OPEN);
-					if((xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_INIT_DONE) == WM_EVENTG_MAIN_HTTP_INIT_DONE)
-					{
-						xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_HTTP_INIT);
-					}
+					xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_CLEAR_CREDS);
+					xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE, pdTRUE, pdFALSE, portMAX_DELAY);
 				}
+				xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_AP_OPEN);
 			}
 		}
-		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
-		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT);
-		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
+		xEventGroupClearBits(wm_http_event_group, WM_EVENTG_HTTP_BLOCK_REQ);
 	}
 }
 
@@ -507,10 +502,10 @@ void wm_wifi_scan_task(void *pvParameters)
 	while (1)
 	{
 		xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_START, pdTRUE, pdFALSE, portMAX_DELAY);
-		xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
+		xEventGroupSetBits(wm_http_event_group, WM_EVENTG_HTTP_BLOCK_REQ);
 		wifi_app_wifi_scan_t *wifi_scan_list = wifi_app_wifi_scan_t_init();
 		wm_wifi_scan(wifi_scan_list);
-		xEventGroupClearBits(wm_wifi_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
+		xEventGroupClearBits(wm_http_event_group, WM_EVENTG_HTTP_BLOCK_REQ);
 		wm_wifi_send_scan_message(wifi_scan_list);
 		ESP_LOGI(TAG, "Wifi Scan Task Finished");
 		xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_RESULT_SENT, pdTRUE, pdFALSE, portMAX_DELAY);

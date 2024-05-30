@@ -108,6 +108,7 @@ static void wm_nvs_write()
 		}
 
 		nvs_close(nvs_handle);
+		xEventGroupClearBits(wm_http_event_group, WM_EVENTG_HTTP_BLOCK_REQ);
 		xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE);
 	}else {
 		ESP_LOGE(TAG, "NVS Open Failed");
@@ -141,6 +142,7 @@ static void wm_nvs_clear()
 		}
 
 		nvs_close(nvs_handle);
+		xEventGroupClearBits(wm_http_event_group, WM_EVENTG_HTTP_BLOCK_REQ);
 		xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE);
 	}else {
 		ESP_LOGE(TAG, "NVS Open Failed");
@@ -155,28 +157,30 @@ void wm_nvs_task(void *pvParameters)
 																			pdTRUE, pdFALSE, portMAX_DELAY);
 		if ((uxBits & WM_EVENTG_NVS_WRITE_CREDS) != 0)
 		{
-			xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
+			xEventGroupSetBits(wm_http_event_group, WM_EVENTG_HTTP_BLOCK_REQ);
 			ESP_LOGI(TAG, "NVS Write Event Triggered");
 			wm_nvs_write();
 		}
 		else if ((uxBits & WM_EVENTG_NVS_READ_CREDS) != 0)
 		{
 			ESP_LOGI(TAG, "NVS Read Event Triggered");
-			xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
+			xEventGroupSetBits(wm_http_event_group, WM_EVENTG_HTTP_BLOCK_REQ);
 			esp_err_t err =wm_nvs_read();
 			if (err != ESP_OK)
 			{
 				ESP_LOGE(TAG, "NVS Read Failed");
 				xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_CREDS_NOT_FOUND);
+				xEventGroupSetBits(wm_task_event_group, WM_EVENTG_TASK_ALL_INIT);
 			}
 			else
 			{
 				xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_CREDS_FOUND);
+				xEventGroupSetBits(wm_task_event_group, WM_EVENTG_TASK_WIFI_INIT);
 			}
 		}
 		else if((uxBits & WM_EVENTG_NVS_CLEAR_CREDS) != 0)
 		{
-			xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_BLOCK_REQ);
+			xEventGroupSetBits(wm_http_event_group, WM_EVENTG_HTTP_BLOCK_REQ);
 			ESP_LOGI(TAG, "NVS Clear Event Triggered");
 			wm_nvs_clear();
 		}

@@ -47,15 +47,12 @@
 */
 typedef enum 
 {
-	//WM_EVENTG_MAIN_CLOSE_SERVER_AND_AP = 1 << 0,     /*!< Flag for Wifi AP and HTTP Server Close Task Trigger */
 	WM_EVENTG_MAIN_AP_OPEN = 1 << 0,    /*!< Flag for Wifi AP Open */
 	WM_EVENTG_MAIN_AP_CLOSED = 1 << 1,    /*!< Flag for Wifi AP Closed */
 	WM_EVENTG_MAIN_HTTP_OPEN = 1 << 2,    /*!< Flag for HTTP Server Open */
 	WM_EVENTG_MAIN_HTTP_CLOSED = 1 << 3,   /*!< Flag for HTTP Server Closed */
 	WM_EVENTG_MAIN_SCAN_TASK_OPEN = 1 << 4, /*!< Flag for Start Task Sequencer Scan Task Open */
 	WM_EVENTG_MAIN_SCAN_TASK_CLOSED = 1 << 5, /*!< Flag for Start Task Sequencer Scan Task Closed */
-	WM_EVENTG_MAIN_HTTP_BLOCK_REQ = 1 << 6, /*!< Flag for HTTP Server Block Request */
-	WM_EVENTG_MAIN_HTTP_INIT_DONE = 1 << 7, /*!< Flag for HTTP Server Init */
 } wm_main_event_group_e; /*!< Wifi Manager Main Event Group Enum */
 
 /*!
@@ -71,7 +68,7 @@ extern EventGroupHandle_t wm_main_event_group; /*!< Event Group Handle */
 */
 typedef enum 
 {
-	WM_EVENTG_WIFI_CONNECT = 1 << 0, /*!< Flag for Wifi Connect Task Trigger */
+	WM_EVENTG_WIFI_CONNECT_FROM_NVS = 1 << 0, /*!< Flag for Wifi Connect Task Trigger */
 	WM_EVENTG_WIFI_CONNECTED = 1 << 1, /*!< Flag for Wifi Connected */
 	WM_EVENTG_WIFI_CONNECT_FAIL = 1 << 2, /*!< Flag for Wifi Disconnected */
 	WM_EVENTG_WIFI_SCAN_START = 1 << 3, /*!< Flag for Wifi Scan Start */
@@ -101,8 +98,6 @@ typedef enum
 	WM_EVENTG_NVS_DONE = 1 << 4, /*!< Flag for NVS Task Finished */
 	WM_EVENTG_NVS_CLEAR_CREDS = 1 << 5, /*!< Flag for NVS Clear Creds */
 	WM_EVENTG_NVS_FAIL = 1 << 6, /*!< Flag for NVS Task Fail */
-	WM_EVENTG_NVS_HTTP_INIT = 1 << 7, /*!< Flag for NVS Event Group HTTP Init */
-	WM_EVENTG_NVS_CLOSE = 1 << 8, /*!< Flag for Wifi Manager Task */
 } wm_nvs_event_group_e; /*!< Wifi Manager NVS Event Group Enum */
 
 /*!
@@ -110,5 +105,45 @@ typedef enum
 *
 */
 extern EventGroupHandle_t wm_nvs_event_group; /*!< Event Group Handle */
+
+/*!
+* @brief Wifi Manager Task Event Group
+*
+* This enum defines the flags for the Wifi Manager Task Event Group.
+*/
+typedef enum
+{
+	WM_EVENTG_TASK_ALL_INIT = 1 << 0, /*!< Flag for Task Init */
+	WM_EVENTG_TASK_WIFI_INIT = 1 << 1, /*!< Flag for Wifi Init */
+	WM_EVENTG_TASK_ALL_INIT_DONE = 1 << 2, /*!< Flag for Task Init Done */
+	WM_EVENTG_TASK_DEINIT = 1 << 3, /*!< Flag for HTTP Tasks and Task to Deinit */
+	WM_EVENTG_TASK_DEINIT_DONE = 1 << 4, /*!< Flag for HTTP Tasks and Task Deinit Done */ //!TODO: Use this flag
+} wm_task_event_group_e; /*!< Wifi Manager Task Event Group Enum */
+
+/*!
+* @brief Wifi Manager Task Event Group Handler
+*
+*/
+extern EventGroupHandle_t wm_task_event_group; /*!< Event Group Handle */
+
+/*!
+* @brief Wifi Manager HTTP Event Group
+*
+* This enum defines the flags for the Wifi Manager HTTP Event Group.
+*/
+typedef enum
+{
+	WM_EVENTG_HTTP_BLOCK_REQ = 1 << 0, /*!< Flag for HTTP Block Request */
+	WM_EVENTG_HTTP_SCAN_DONE = 1 << 1, /*!< Flag for Scan Done */
+	WM_EVENTG_HTTP_WIFI_AUTH_FAIL = 1 << 2, /*!< Flag for Wifi Auth Fail */
+	WM_EVENTG_HTTP_WIFI_CONNECTED = 1 << 3, /*!< Flag for Wifi Connected */
+	WM_EVENTG_HTTP_WIFI_CONNECT_FAIL = 1 << 4, /*!< Flag for Wifi Connect Fail */
+} wm_http_event_group_e; /*!< Wifi Manager HTTP Event Group Enum */
+
+/*!
+* @brief Wifi Manager HTTP Event Group Handler
+*
+*/
+extern EventGroupHandle_t wm_http_event_group; /*!< Event Group Handle */
 
 #endif /* __WIFI_MANAGER_PRIVATE_H__ */

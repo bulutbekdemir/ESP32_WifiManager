@@ -167,7 +167,7 @@ static esp_err_t http_server_wifi_connect_json_handler(httpd_req_t *req)
 	ESP_LOGI(TAG, "Wifi Connect JSON Handler, waiting for semaphore");
 	if(xSemaphoreTake(wm_http_wifi_request_semaphore, portMAX_DELAY) == pdTRUE)
 	{
-		if(!(xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_BLOCK_REQ) || !(xEventGroupGetBits(wm_wifi_event_group) & WM_EVENTG_WIFI_CONNECTED))
+		if(!(xEventGroupGetBits(wm_http_event_group) & WM_EVENTG_HTTP_BLOCK_REQ) || !(xEventGroupGetBits(wm_http_event_group) & WM_EVENTG_HTTP_WIFI_CONNECTED))
 		{
 			ESP_LOGI(TAG, "Wifi Connect JSON Handler, semaphore taken");
 			size_t lenSSID = 0, lenPassword = 0;
@@ -211,7 +211,24 @@ static esp_err_t http_server_wifi_connect_json_handler(httpd_req_t *req)
 			free(ssid);
 			free(password);
 
-			xEventGroupWaitBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECTED | WM_EVENTG_WIFI_CONNECT_FAIL, pdFALSE, pdFALSE, portMAX_DELAY);
+		 	EventBits_t WifiStaBits =	xEventGroupWaitBits(wm_http_event_group, WM_EVENTG_HTTP_WIFI_CONNECTED | WM_EVENTG_HTTP_WIFI_CONNECT_FAIL | 
+																										WM_EVENTG_HTTP_WIFI_AUTH_FAIL, pdFALSE, pdFALSE, portMAX_DELAY);
+			if((WifiStaBits & WM_EVENTG_HTTP_WIFI_AUTH_FAIL) != 0)
+			{
+    		httpd_resp_set_type(req, "text/plain");
+    		const char *resp_str = "Wrong SSID or Password, please try again.";
+    		httpd_resp_send(req, resp_str, strlen(resp_str));
+			}else if ((WifiStaBits & WM_EVENTG_HTTP_WIFI_CONNECTED) != 0)
+			{
+				httpd_resp_set_type(req, "text/plain");
+				const char *resp_str = "Wifi Connected Successfully";
+				httpd_resp_send(req, resp_str, strlen(resp_str));
+			}else if ((WifiStaBits & WM_EVENTG_HTTP_WIFI_CONNECT_FAIL) != 0)
+			{
+				httpd_resp_set_type(req, "text/plain");
+				const char *resp_str = "Wifi Connection Failed due to Unknown Error. Please try again.";
+				httpd_resp_send(req, resp_str, strlen(resp_str));
+			}
 		}else 
 		{
 			httpd_resp_send_503(req);
@@ -230,7 +247,7 @@ static esp_err_t http_server_wifi_connect_json_handler(httpd_req_t *req)
 static esp_err_t http_server_wifi_status_json_handler(httpd_req_t *req)
 {
 	char wifiJSON[100];
-	sprintf(wifiJSON, "{\"status\":%d}", (xEventGroupGetBits(wm_wifi_event_group) & WM_EVENTG_WIFI_CONNECTED ? 1 : 0));
+	sprintf(wifiJSON, "{\"status\":%d}", (xEventGroupGetBits(wm_http_event_group) & WM_EVENTG_HTTP_WIFI_CONNECTED ? 1 : 0));
 	httpd_resp_set_type(req, "application/json");
 	httpd_resp_send(req, wifiJSON, strlen(wifiJSON));
 	return ESP_OK;
@@ -247,7 +264,7 @@ static esp_err_t http_server_wifi_scan_result_list_json_handler(httpd_req_t *req
 	ESP_LOGI(TAG, "Wifi Scan Result List JSON Handler, waiting for semaphore");
 	if(xSemaphoreTake(wm_http_wifi_request_semaphore, portMAX_DELAY) == pdTRUE)
 	{
-		if(!(xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_BLOCK_REQ))
+		if(!(xEventGroupGetBits(wm_http_event_group) & WM_EVENTG_HTTP_BLOCK_REQ))
 		{
 			ESP_LOGI(TAG, "Wifi Scan Result List JSON Handler, semaphore taken");
 			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_START);
@@ -274,17 +291,10 @@ static esp_err_t http_server_wifi_scan_result_list_json_handler(httpd_req_t *req
 			wifi_app_wifi_scan_t_deinit(wifi_scan);
 			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_SCAN_RESULT_SENT);		
 			ESP_LOGI(TAG, "Wifi Scan Result List JSON Handler, semaphore to be given");
-		}/* IDK if this is necessary or the right way to do it
-		else if ((xEventGetGroupBits(wm_wifi_event_group) & WM_EVENTG_WIFI_CONNECTED))
-		{
-			httpd_resp_send_503(req); //Connection is established, do not allow scan
-		}else if(!(xEventGetGroupBits(wm_nvs_event_group) & WM_EVENTG_NVS_DONE)) 
-		{
-			httpd_resp_send_503(req); //NVS is not done, do not allow scan
-		}*/
+		}
 		else
 		{
-			httpd_resp_send_503(req); //Default 404
+			httpd_resp_send_503(req); //Default 503 response for blocking requests
 		}	
 		xSemaphoreGive(wm_http_wifi_request_semaphore);
 	}
