@@ -254,7 +254,7 @@ void wm_wifi_connect_task(void *pvParameters)
 			ESP_LOGI(TAG, "Wifi Connect Event Received");
 			EventBits_t mainBits;
 			mainBits = xEventGroupGetBits(wm_task_event_group);
-			if((mainBits & WM_EVENTG_TASK_ALL_INIT_DONE) != 1)
+			if((mainBits & WM_EVENTG_TASK_ALL_INIT_DONE) != WM_EVENTG_TASK_ALL_INIT_DONE)
 			{
 				xEventGroupSetBits(wm_http_event_group, WM_EVENTG_HTTP_BLOCK_REQ);
 				BaseType_t xStatus = wm_wifi_ap_close();
@@ -271,7 +271,6 @@ void wm_wifi_connect_task(void *pvParameters)
 		else if ((uxBits & WM_EVENTG_WIFI_CONNECT_FAIL) == WM_EVENTG_WIFI_CONNECT_FAIL)
 		{
 			ESP_LOGE(TAG, "Wifi Connect Failed");
-			EventBits_t mainBits = xEventGroupGetBits(wm_main_event_group);
 			if((xEventGroupGetBits(wm_task_event_group) & WM_EVENTG_TASK_DEINIT_DONE) == WM_EVENTG_TASK_DEINIT_DONE)
 			{
 				ESP_LOGW(TAG, "Wifi Connect Failed when HTTP already deinited, Restarting");

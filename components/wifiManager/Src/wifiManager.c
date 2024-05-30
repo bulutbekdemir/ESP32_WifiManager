@@ -42,10 +42,15 @@ EventGroupHandle_t wm_wifi_event_group; /*!< Event Group Handle */
 EventGroupHandle_t wm_main_event_group; /*!< Event Group Handle */
 
 /*!
-* @brief Wifi Manager Wifi Task Handler
+* @brief Wifi Manager Task Event Group
 *
 */
 EventGroupHandle_t wm_task_event_group;
+
+/*!
+* @brief Wifi Manager HTTP Event Group
+*/
+EventGroupHandle_t wm_http_event_group;
 
 ///>Function Prototypes
 static void wm_http_server_start(void);
@@ -92,6 +97,14 @@ esp_err_t wifiManager_init ()
 	if (wm_task_event_group == NULL)
 	{
 		ESP_LOGE(TAG, "Failed to create Task Event Group");
+		return ret;
+	}
+
+	///> Initialize HTTP Event Group
+	wm_http_event_group = xEventGroupCreate();
+	if (wm_http_event_group == NULL)
+	{
+		ESP_LOGE(TAG, "Failed to create HTTP Event Group");
 		return ret;
 	}
 
@@ -158,6 +171,8 @@ static void wm_init_task(void *pvParameters)
 			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FROM_NVS);
 		}else if ((uxBits & WM_EVENTG_TASK_ALL_INIT) != 0){
 			ESP_LOGI(TAG, "NVS Creds Not Found, Starting Wifi Application and HTTP Server");
+			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
+			xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_AP_OPEN, pdFALSE, pdFALSE, portMAX_DELAY);
 			wm_scan_task_start();
 			xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_SCAN_TASK_OPEN, pdFALSE, pdFALSE, portMAX_DELAY);
 			wm_http_server_start();
@@ -203,7 +218,7 @@ static void wm_http_server_stop(void)
 		ESP_LOGE(TAG, "Failed to stop HTTP Server");
 		return;
 	}
-	vQueueDelete(wm_http_event_group);
+	vEventGroupDelete(wm_http_event_group);
 	if (wm_http_event_group != NULL)
 	{
 		wm_http_event_group = NULL;
