@@ -163,7 +163,7 @@ static void wm_init_task(void *pvParameters)
 	while (1)
 	{
 		EventBits_t uxBits = xEventGroupWaitBits(wm_task_event_group, 	WM_EVENTG_TASK_ALL_INIT | WM_EVENTG_TASK_WIFI_INIT 
-																						| WM_EVENTG_TASK_DEINIT, pdTRUE, pdFALSE, portMAX_DELAY);
+																						| WM_EVENTG_TASK_DEINIT, pdFALSE, pdFALSE, portMAX_DELAY);
 
 		if ((uxBits & WM_EVENTG_TASK_WIFI_INIT) != 0)
 		{
@@ -182,10 +182,15 @@ static void wm_init_task(void *pvParameters)
 		}else if ((uxBits & WM_EVENTG_TASK_DEINIT) != 0){
 			ESP_LOGI(TAG, "Deinit Task Triggered");
 			wm_http_server_stop();
+			xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_CLOSED, pdFALSE, pdFALSE, portMAX_DELAY);
 			wm_scan_task_stop();
+			xEventGroupWaitBits(wm_main_event_group, WM_EVENTG_MAIN_SCAN_TASK_CLOSED, pdFALSE, pdFALSE, portMAX_DELAY);
 			xEventGroupSetBits(wm_task_event_group, WM_EVENTG_TASK_DEINIT_DONE);
+			xEventGroupClearBits(wm_task_event_group, WM_EVENTG_TASK_DEINIT);
+			ESP_LOGI(TAG, "Deinit Completed");
 			vTaskDelete(NULL);
 		}
+		xEventGroupClearBits(wm_task_event_group, WM_EVENTG_TASK_ALL_INIT | WM_EVENTG_TASK_WIFI_INIT);
 	}
 }
 
@@ -212,18 +217,15 @@ static void wm_http_server_start(void)
 */
 static void wm_http_server_stop(void)
 {
+	ESP_LOGI(TAG, "Stopping HTTP Server");
 	BaseType_t xReturn = http_server_stop();
 	if (xReturn != pdPASS)
 	{
 		ESP_LOGE(TAG, "Failed to stop HTTP Server");
 		return;
 	}
-	vEventGroupDelete(wm_http_event_group);
-	if (wm_http_event_group != NULL)
-	{
-		wm_http_event_group = NULL;
-	}
 	xEventGroupClearBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_OPEN);
+	ESP_LOGI(TAG, "HTTP Server Stopped");
 	xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_HTTP_CLOSED);
 }
 
@@ -236,7 +238,7 @@ static void wm_scan_task_start(void)
 {
 	BaseType_t xReturned = pdFAIL;
 	xReturned = xTaskCreatePinnedToCore(&wm_wifi_scan_task, "wm_scan_task", WIFI_SCAN_TASK_STACK_SIZE, NULL, \
-							WIFI_SCAN_TASK_PRIORITY, NULL, WIFI_SCAN_TASK_CORE_ID);
+							WIFI_SCAN_TASK_PRIORITY, &wm_wifi_scan_task_handle, WIFI_SCAN_TASK_CORE_ID);
 	if (xReturned != pdPASS)
 	{
 		ESP_LOGE(TAG, "Failed to create Wifi Scan Task");
@@ -252,16 +254,18 @@ static void wm_scan_task_start(void)
 */
 static void wm_scan_task_stop(void)
 {
-	vQueueDelete(wm_queue_wifi_scan_handle);
-	if (wm_queue_wifi_scan_handle != NULL)
-	{
-		wm_queue_wifi_scan_handle = NULL;
-	}
+	ESP_LOGI(TAG, "Stopping Wifi Scan Task");
 	vTaskDelete(wm_wifi_scan_task_handle);
 	if (wm_wifi_scan_task_handle != NULL)
 	{
 		wm_wifi_scan_task_handle = NULL;
 	}
+	vQueueDelete(wm_queue_wifi_scan_handle);
+	if (wm_queue_wifi_scan_handle != NULL)
+	{
+		wm_queue_wifi_scan_handle = NULL;
+	}
+	ESP_LOGI(TAG, "Wifi Scan Task Stopped and Queue Deleted");
 	xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_SCAN_TASK_CLOSED);
 }
 

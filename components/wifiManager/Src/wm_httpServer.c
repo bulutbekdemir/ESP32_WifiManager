@@ -483,15 +483,6 @@ BaseType_t http_server_init(void)
 */
 BaseType_t http_server_stop(void)
 {
-	if(wm_http_server_task_handle != NULL)
-	{
-		httpd_stop(wm_http_server_task_handle);
-		wm_http_server_task_handle = NULL;
-	}
-	else
-	{
-		ESP_LOGW(TAG, "HTTP Server is already stopped");
-	}
 	if(wm_http_wifi_request_semaphore != NULL)
 	{
 		vSemaphoreDelete(wm_http_wifi_request_semaphore);
@@ -500,6 +491,15 @@ BaseType_t http_server_stop(void)
 	else
 	{
 		ESP_LOGW(TAG, "HTTP Wifi Request Semaphore is already deleted");
+	}
+	if(wm_http_server_task_handle != NULL)
+	{
+		httpd_stop(wm_http_server_task_handle);
+		wm_http_server_task_handle = NULL;
+	}
+	else
+	{
+		ESP_LOGW(TAG, "HTTP Server is already stopped");
 	}
 	if(wm_http_server_task_handle == NULL && wm_http_wifi_request_semaphore == NULL)
 	{

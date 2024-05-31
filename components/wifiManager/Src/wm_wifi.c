@@ -112,13 +112,19 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 						break;*/
 					case WIFI_REASON_AUTH_FAIL:
 						ESP_LOGI(TAG, "Auth Fail");
-						if((mainStaBits & WM_EVENTG_MAIN_HTTP_OPEN) == WM_EVENTG_MAIN_HTTP_OPEN)
+						if(++wifi_connect_retry < 2)
 						{
-							xEventGroupSetBits(wm_http_event_group, WM_EVENTG_HTTP_WIFI_AUTH_FAIL);
-						}else
-						{
-							xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
-						}
+							esp_wifi_connect();
+						}else {
+							ESP_LOGI(TAG, "Max Retries Reached for AUTH fail");
+							if((mainStaBits & WM_EVENTG_MAIN_HTTP_OPEN) == WM_EVENTG_MAIN_HTTP_OPEN)
+							{
+								xEventGroupSetBits(wm_http_event_group, WM_EVENTG_HTTP_WIFI_AUTH_FAIL);
+							}else
+							{
+								xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
+							}
+						}	
 						break;
 					default:
 						wifi_connect_retry++;
@@ -254,7 +260,7 @@ void wm_wifi_connect_task(void *pvParameters)
 			ESP_LOGI(TAG, "Wifi Connect Event Received");
 			EventBits_t mainBits;
 			mainBits = xEventGroupGetBits(wm_task_event_group);
-			if((mainBits & WM_EVENTG_TASK_ALL_INIT_DONE) != WM_EVENTG_TASK_ALL_INIT_DONE)
+			if((mainBits & WM_EVENTG_TASK_ALL_INIT_DONE) == WM_EVENTG_TASK_ALL_INIT_DONE)
 			{
 				xEventGroupSetBits(wm_http_event_group, WM_EVENTG_HTTP_BLOCK_REQ);
 				BaseType_t xStatus = wm_wifi_ap_close();
@@ -263,6 +269,7 @@ void wm_wifi_connect_task(void *pvParameters)
 					xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_WRITE_CREDS);
 					wm_wifi_send_message(&wifi_config_msg.wifi_config);
 					xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE, pdTRUE, pdFALSE, portMAX_DELAY);
+					xEventGroupClearBits(wm_main_event_group, WM_EVENTG_MAIN_AP_OPEN);
 					xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_AP_CLOSED);
 					xEventGroupSetBits(wm_task_event_group, WM_EVENTG_TASK_DEINIT);
 				}
@@ -287,6 +294,12 @@ void wm_wifi_connect_task(void *pvParameters)
 				{
 					xEventGroupSetBits(wm_nvs_event_group, WM_EVENTG_NVS_CLEAR_CREDS);
 					xEventGroupWaitBits(wm_nvs_event_group, WM_EVENTG_NVS_DONE, pdTRUE, pdFALSE, portMAX_DELAY);
+				}
+				if((xEventGroupGetBits(wm_task_event_group) & WM_EVENTG_TASK_ALL_INIT) == WM_EVENTG_TASK_ALL_INIT)
+				{
+					ESP_LOGI(TAG, "Standard Init Process");
+				}else{
+					xEventGroupSetBits(wm_task_event_group, WM_EVENTG_TASK_ALL_INIT);
 				}
 				xEventGroupSetBits(wm_main_event_group, WM_EVENTG_MAIN_AP_OPEN);
 			}
