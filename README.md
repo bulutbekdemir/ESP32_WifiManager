@@ -12,6 +12,10 @@ Whole infrastructure is event-driven and it should have minimal cpu time, also i
 
 If anyone wants to change any parameter of wifiManager, can use menuconfig every parameter of application is defined in KConfig file.
 
+Now, you can choose two types of SSID for your ESP32:
+- You can use dynamic naming with a prefix. Dynamic means, it differs from device to device because it makes SSID postfix is unique MAC of used esp32.
+- You can use static ssid, this feature is the default.
+
 ## __Usage__
 
 Due to its a first stable version; you should config some parameters of your menuconfig with your own, these parameters are:
@@ -46,7 +50,7 @@ Any esp32 with 4 MB flash.
 ****
 
 ## Active To-do List :
-- Dynamic AP name.
+- Dynamic AP name. &#x2705;
 - Button Interrupt for deleting creds. ( I will do it choosable for your own need for to use max_retry number or button for deleting creds) 
 - mDNS.
 
