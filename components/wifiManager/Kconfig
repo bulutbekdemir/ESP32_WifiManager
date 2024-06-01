@@ -112,6 +112,33 @@ menu "WifiManager Configuration"
 			help
 				Enter the core ID for the NVS Task.
 
+		config USE_BUTTON_INT
+			bool "Use Button Interrupt"
+			default y
+			help
+				Enable to use button interrupt for the clearing credentials using the Button or Rerty number of times for disconnection.
+				If you want to use maximum number of retries for the disconnection, then disable this option.
+
+		config BUTTON_INT_TASK_PRIORITY
+			int "Button Interrupt Task Priority"
+			default 5
+			range 2 6
+			help
+				Enter the priority for the Button Interrupt Task. Real priority will be 1 less than the value entered.
+		
+		config BUTTON_INT_TASK_STACK_SIZE
+			int "Button Interrupt Task Stack Size"
+			default 2048
+			help
+				Enter the stack size for the Button Interrupt Task.
+		
+		config BUTTON_INT_TASK_CORE_ID
+			int "Button Interrupt Task Core ID"
+			default 0
+			range 0 1
+			help
+				Enter the core ID for the Button Interrupt Task.
+
 	endmenu # End of NVS Task Configuration
 
 	menu "AP Configuration"
@@ -300,5 +327,37 @@ menu "WifiManager Configuration"
 				Enable to use reference count for the WifiManager. 
 
 	endmenu # End of Wifi Manager Project Specific Configuration
+
+	menu "Button Interrupt Settings"
+
+		config BUTTON_INT_PIN
+			int "Button Interrupt Pin"
+			default 0
+			help
+				Enter the GPIO pin number for the button interrupt.
+
+		config BUTTON_INT_TYPE
+			choice
+					prompt "Button Interrupt Type"
+					default BUTTON_INT_FALLING_EDGE
+	
+					config BUTTON_INT_RISING_EDGE
+							bool "Rising Edge"
+	
+					config BUTTON_FALLING_EDGE
+							bool "Falling Edge"
+	
+	config BUTTON_PULL_TYPE
+			choice
+					prompt "Button Pull Type"
+					default BUTTON_PULLUP
+	
+					config BUTTON_PULLUP
+							bool "Pull Up"
+	
+					config BUTTON_PULLDOWN
+							bool "Pull Down"
+
+	endmenu # End of Button Interrupt Settings
 
 endmenu	# End of WifiManager Configuration

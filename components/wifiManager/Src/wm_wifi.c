@@ -130,24 +130,30 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 						}	
 						break;
 					default:
-						wifi_connect_retry++;
-						if(wifi_event_sta_disconnected->reason == WIFI_REASON_NO_AP_FOUND)
-						{
-							ESP_LOGW(TAG, "Reason: NO_AP_FOUND");
-						}else{
-							ESP_LOGW(TAG, "Reason: %d", wifi_event_sta_disconnected->reason); 
-						}
-						if(wifi_connect_retry < MAX_CONNECTION_RETRIES)
-						{
-							ESP_LOGI(TAG, "Retrying Wifi Connection %d", wifi_connect_retry );  
+						#ifndef USE_BUTTON_INT
+							wifi_connect_retry++;
+						#endif
+							if(wifi_event_sta_disconnected->reason == WIFI_REASON_NO_AP_FOUND)
+							{
+								ESP_LOGW(TAG, "Reason: NO_AP_FOUND");
+							}else{
+								ESP_LOGW(TAG, "Reason: %d", wifi_event_sta_disconnected->reason); 
+							}
+						#ifndef USE_BUTTON_INT
+							if(wifi_connect_retry < MAX_CONNECTION_RETRIES)
+							{
+								ESP_LOGI(TAG, "Retrying Wifi Connection %d", wifi_connect_retry );  
+								esp_wifi_connect();
+							}
+							else
+							{
+								ESP_LOGE(TAG, "Max Connection Retries Reached");
+								wifi_connect_retry = 0;
+								xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
+							}
+						#else
 							esp_wifi_connect();
-						}
-						else
-						{
-							ESP_LOGE(TAG, "Max Connection Retries Reached");
-							wifi_connect_retry = 0;
-							xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
-						}
+						#endif
 					break;
 				}
 				break;

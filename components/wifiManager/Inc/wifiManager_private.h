@@ -40,6 +40,16 @@
 #define HTTP_SERVER_TASK_STACK_SIZE		CONFIG_HTTP_SERVER_TASK_STACK_SIZE // 8192 is default
 #define HTTP_SERVER_TASK_CORE_ID			CONFIG_HTTP_SERVER_TASK_CORE_ID // 0 is default
 
+#ifdef CONFIG_USE_BUTTON_INT 
+#define USE_BUTTON_INT
+
+//Button Interrupt task
+#define BUTTON_INT_TASK_PRIORITY				CONFIG_BUTTON_INT_TASK_PRIORITY // 5 is default
+#define BUTTON_INT_TASK_STACK_SIZE			CONFIG_BUTTON_INT_TASK_STACK_SIZE // 2048 is default
+#define BUTTON_INT_TASK_CORE_ID					CONFIG_BUTTON_INT_TASK_CORE_ID // 0 is default
+
+#endif
+
 /*!
 * @brief Wifi Manager Main Event Group
 *
@@ -117,7 +127,8 @@ typedef enum
 	WM_EVENTG_TASK_WIFI_INIT = 1 << 1, /*!< Flag for Wifi Init */
 	WM_EVENTG_TASK_ALL_INIT_DONE = 1 << 2, /*!< Flag for Task Init Done */
 	WM_EVENTG_TASK_DEINIT = 1 << 3, /*!< Flag for HTTP Tasks and Task to Deinit */
-	WM_EVENTG_TASK_DEINIT_DONE = 1 << 4, /*!< Flag for HTTP Tasks and Task Deinit Done */ //!TODO: Use this flag
+	WM_EVENTG_TASK_DEINIT_DONE = 1 << 4, /*!< Flag for HTTP Tasks and Task Deinit Done */ 
+	WM_EVENTG_TASK_BUTTON_PRESSED = 1 << 5, /*!< Flag for Button Pressed */
 } wm_task_event_group_e; /*!< Wifi Manager Task Event Group Enum */
 
 /*!
