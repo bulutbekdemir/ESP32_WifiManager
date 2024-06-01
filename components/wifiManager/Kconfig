@@ -112,6 +112,10 @@ menu "WifiManager Configuration"
 			help
 				Enter the core ID for the NVS Task.
 
+	endmenu # End of NVS Task Configuration
+
+	menu "Button Interrupt Task Configuration"
+
 		config USE_BUTTON_INT
 			bool "Use Button Interrupt"
 			default y
@@ -139,7 +143,7 @@ menu "WifiManager Configuration"
 			help
 				Enter the core ID for the Button Interrupt Task.
 
-	endmenu # End of NVS Task Configuration
+	endmenu # End of Button Interrupt Task Configuration
 
 	menu "AP Configuration"
 
