@@ -12,6 +12,9 @@
 #include "esp_netif.h"
 #include "esp_wifi_netif.h"
 #include "lwip/netdb.h"
+#ifdef CONFIG_USE_DYNAMIC_AP_NAME
+#include "esp_mac.h"
+#endif
 
 #include "wifiManager_private.h"
 #include "wm_generalMacros.h"
@@ -427,17 +430,33 @@ static esp_err_t wm_wifi_connect_sta(wifi_config_t *wifi_config_params)
 */
 static void wm_wifi_connect_apsta(void)
 {
-		wifi_config_t wifi_ap_config = {
-			.ap = {
-					.ssid = WIFI_AP_SSID,
-					.password = WIFI_AP_PASS,
-					.channel = WIFI_AP_CHANNEL,
-					.ssid_hidden = WIFI_AP_SSID_HIDDEN,
-					.max_connection = WIFI_AP_MAX_CONNECTIONS,
-					.beacon_interval = WIFI_AP_BEACON_INTERVAL,
-					.authmode = WIFI_AUTH_WPA_WPA2_PSK
-			}
+#ifdef CONFIG_USE_DYNAMIC_AP_NAME
+	uint8_t mac[6];  // Array to hold the MAC address
+	esp_err_t result = esp_efuse_mac_get_default(mac);  // Retrieve the MAC address
+
+	if (result != ESP_OK) {
+			printf("Failed to get MAC address\n");
+	}
+#endif
+
+	wifi_config_t wifi_ap_config = {
+		.ap = {
+				.ssid = WIFI_AP_SSID,
+				.password = WIFI_AP_PASS,
+				.channel = WIFI_AP_CHANNEL,
+				.ssid_hidden = WIFI_AP_SSID_HIDDEN,
+				.max_connection = WIFI_AP_MAX_CONNECTIONS,
+				.beacon_interval = WIFI_AP_BEACON_INTERVAL,
+				.authmode = WIFI_AUTH_WPA_WPA2_PSK
+		}
 	};
+
+#ifdef CONFIG_USE_DYNAMIC_AP_NAME
+	snprintf((char *)wifi_ap_config.ap.ssid + strlen((char *)wifi_ap_config.ap.ssid), 
+					sizeof(wifi_ap_config.ap.ssid) - strlen((char *)wifi_ap_config.ap.ssid), 
+					"%02X%02X%02X%02X%02X%02X",
+					mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+#endif
 
 	if (strlen((char *)wifi_ap_config.ap.password) == 0) {
 			wifi_ap_config.ap.authmode = WIFI_AUTH_OPEN;

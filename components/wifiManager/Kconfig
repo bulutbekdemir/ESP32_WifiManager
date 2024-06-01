@@ -116,6 +116,12 @@ menu "WifiManager Configuration"
 
 	menu "AP Configuration"
 
+		config USE_DYNAMIC_AP_NAME
+			bool "Use Dynamic AP"
+			default n
+			help
+				Enable to use dynamic AP Name configuration. This naming will be based on the MAC address of the ESP32.
+
 		config WIFI_AP_SSID
 			string "SSID for AP"
 			default "ESP32_WM_AP"
