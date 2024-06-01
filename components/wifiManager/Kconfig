@@ -338,25 +338,27 @@ menu "WifiManager Configuration"
 
 		config BUTTON_INT_TYPE
 			choice
-					prompt "Button Interrupt Type"
-					default BUTTON_INT_FALLING_EDGE
+				prompt "Button Interrupt Type"
+				default BUTTON_FALLING_EDGE
+
+				config BUTTON_RISING_EDGE
+						bool "Rising Edge"
+
+				config BUTTON_FALLING_EDGE
+						bool "Falling Edge"
+			endchoice
 	
-					config BUTTON_INT_RISING_EDGE
-							bool "Rising Edge"
-	
-					config BUTTON_FALLING_EDGE
-							bool "Falling Edge"
-	
-	config BUTTON_PULL_TYPE
+		config BUTTON_PULL_TYPE
 			choice
-					prompt "Button Pull Type"
-					default BUTTON_PULLUP
-	
-					config BUTTON_PULLUP
-							bool "Pull Up"
-	
-					config BUTTON_PULLDOWN
-							bool "Pull Down"
+				prompt "Button Pull Type"
+				default BUTTON_PULLUP
+
+				config BUTTON_PULLUP
+						bool "Pull Up"
+
+				config BUTTON_PULLDOWN
+						bool "Pull Down"
+			endchoice			
 
 	endmenu # End of Button Interrupt Settings
 

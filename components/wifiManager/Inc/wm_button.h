@@ -10,13 +10,13 @@
 #ifndef WM_BUTTON_H_
 #define WM_BUTTON_H_
 
-#define BUTTON_GPIO CONFIG_BUTTON_GPIO /*!< Button GPIO */
+#define BUTTON_GPIO CONFIG_BUTTON_INT_PIN /*!< Button GPIO */
 
 #ifdef CONFIG_BUTTON_FALLING_EDGE
-#define GPIO_INTR_NEGEDGE /*!< Button Interrupt Falling Edge */
+#define BUTTON_INTR_NEGEDGE /*!< Button Interrupt Falling Edge */
 #endif
 #ifdef CONFIG_BUTTON_RISING_EDGE
-#define GPIO_INTR_POSEDGE /*!< Button Interrupt Rising Edge */
+#define BUTTON_INTR_POSEDGE /*!< Button Interrupt Rising Edge */
 #endif
 
 #ifdef CONFIG_BUTTON_PULLUP
