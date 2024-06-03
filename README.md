@@ -58,3 +58,8 @@ Any esp32 with 4 MB flash.
 ## Missing :
 - HTTP User Experience is in pre-release version,  not handling every command I sent from Esp32 with not good looking user interface. Maybe I won't update this for a long time due to long to-do list of this project.
 - Manual Connect button is not working, it is now a test button for dynamically creates new buttons with NULL ssid and other infos. (It's not a bug, It's a feature)
+
+## Known Bugs :
+- When a user attempts to connect to an Access Point (AP) without providing a password, the system autonomously identifies the AP as an open network. If the AP is not open and requires authentication, the ESP enters a panic state.
+
+
