@@ -29,7 +29,6 @@ TaskHandle_t button_task_handle;
 * @param arg GPIO Number
 */
 void IRAM_ATTR gpio_isr_handler(void* arg) {
-		uint32_t gpio_num = (uint32_t) arg;
 		BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 		xEventGroupSetBitsFromISR(wm_task_event_group, WM_EVENTG_TASK_BUTTON_PRESSED, &xHigherPriorityTaskWoken);
 		if(xHigherPriorityTaskWoken) {
@@ -98,10 +97,10 @@ void button_task(void *pvParameters) {
 	while(1) {
 		xEventGroupWaitBits(wm_task_event_group, WM_EVENTG_TASK_BUTTON_PRESSED, pdTRUE, pdFALSE, portMAX_DELAY);
 		ESP_LOGI(TAG, "Button Pressed");
-		if((xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_OPEN) != WM_EVENTG_MAIN_HTTP_OPEN) {
+		//if((xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_OPEN) != WM_EVENTG_MAIN_HTTP_OPEN) {
 			ESP_LOGI(TAG, "Button Pressed, Clear Process Started");
 			xEventGroupSetBits(wm_wifi_event_group, WM_EVENTG_WIFI_CONNECT_FAIL);
-		}
+		//}
 	}
 }
 

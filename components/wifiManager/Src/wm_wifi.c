@@ -295,9 +295,11 @@ void wm_wifi_connect_task(void *pvParameters)
 				esp_restart(); 
 			}else if((xEventGroupGetBits(wm_main_event_group) & WM_EVENTG_MAIN_HTTP_OPEN) == WM_EVENTG_MAIN_HTTP_OPEN)
 			{
+				ESP_LOGI(TAG, "Send disconnected info to HTTP Server");
 				xEventGroupSetBits(wm_http_event_group, WM_EVENTG_HTTP_WIFI_CONNECT_FAIL);
 			}else 
 			{
+				ESP_LOGI(TAG, "Starting AP");
 				wm_wifi_connect_apsta();
 				if((xEventGroupGetBits(wm_nvs_event_group) & WM_EVENTG_NVS_CREDS_FOUND) == WM_EVENTG_NVS_CREDS_FOUND)
 				{

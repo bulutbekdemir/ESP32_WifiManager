@@ -49,7 +49,7 @@ menu "WifiManager Configuration"
 
 		config HTTP_SERVER_TASK_PRIORITY
 			int "Task Priority"
-			default 4
+			default 5
 			range 2 6
 			help
 				Enter the priority for the HTTP Server task. Real priority will be 1 less than the value entered.
