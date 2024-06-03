@@ -1,6 +1,6 @@
 | Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C6 | ESP32-H2 | ESP32-P4 | ESP32-S2 | ESP32-S3 |
 | ----------------- | ----- | -------- | -------- | -------- | -------- | -------- | -------- | -------- |
-| **Tested On Targets** |  &#10060;|&#10060;|&#9989;|&#10060;|  &#10060; |  &#10060; | &#10060;|&#10060;|
+| **Tested On Targets** |  &#10060; Not working due to limited RAM |&#10060;|&#9989;|&#9989;|  &#10060; |  &#10060; | &#10060;|&#10060;|
 
 # First Stable Version with a lot of to-do. 
 
@@ -52,7 +52,7 @@ Any esp32 with 4 MB flash.
 
 ## Active To-do List :
 - Dynamic AP name. &#x2705;
-- Button Interrupt for deleting creds. ( I will do it choosable for your own need for to use max_retry number or button for deleting creds) 
+- Button Interrupt for deleting creds. (Choosable) &#9989;
 - mDNS.
 
 ## Missing :
