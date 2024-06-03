@@ -2,7 +2,7 @@
 | ----------------- | ----- | -------- | -------- | -------- | -------- | -------- | -------- | -------- |
 | **Tested On Targets** |  &#10060; Not working due to limited RAM |&#10060;|&#9989;|&#9989;|  &#10060; |  &#10060; | &#10060;|&#10060;|
 
-# First Stable Version with a lot of to-do. 
+# First Stable Version  
 
 Device Connects AP via information from HTTP server and when connection establishes, the device automatically saves the creds to the NVS and closes the HTTP Server. After any restart device first look nvs and accordingly the result from nvs re-opens HTTP server for new connection or doesn't open any task and establish connection using creds from nvs. It can connect any open-wifi network except whose have a captive portal to do it. Only you can do for it now giving any password info to device and clicks connect. ( Js side is already knows AP authmode but I don't update web side for a long time because of to-do list of project)
 <div class="imgs" >
