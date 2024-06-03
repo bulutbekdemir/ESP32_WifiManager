@@ -14,6 +14,9 @@
 #include "wm_wifi.h"
 #include "wm_nvs.h"
 #include "wm_httpServer.h"
+#ifdef USE_BUTTON_INT
+#include "wm_button.h"
+#endif
 
 static const char *TAG = "WIFI_MANAGER_MAIN";
 
@@ -45,12 +48,12 @@ EventGroupHandle_t wm_main_event_group; /*!< Event Group Handle */
 * @brief Wifi Manager Task Event Group
 *
 */
-EventGroupHandle_t wm_task_event_group;
+EventGroupHandle_t wm_task_event_group; /*!< Event Group Handle */
 
 /*!
 * @brief Wifi Manager HTTP Event Group
 */
-EventGroupHandle_t wm_http_event_group;
+EventGroupHandle_t wm_http_event_group; /*!< Event Group Handle */
 
 ///>Function Prototypes
 static void wm_http_server_start(void);
@@ -137,6 +140,19 @@ esp_err_t wifiManager_init ()
 		ESP_LOGE(TAG, "Failed to create NVS Task");
 		return ret;
 	}
+
+	#ifdef USE_BUTTON_INT
+	ESP_LOGI(TAG, "Starting Button Task");
+
+	///> Initialize Button Task
+	xReturned = xTaskCreatePinnedToCore(&button_task, "button_task", BUTTON_INT_TASK_STACK_SIZE, NULL, \
+																BUTTON_INT_TASK_PRIORITY, &button_task_handle, BUTTON_INT_TASK_CORE_ID);
+	if (xReturned != pdPASS)
+	{
+		ESP_LOGE(TAG, "Failed to create Button Task");
+		return ret;
+	}
+	#endif
 
 	ESP_LOGI(TAG, "Wifi Manager Init Finished, Starting Wifi Manager Init Task");
 
