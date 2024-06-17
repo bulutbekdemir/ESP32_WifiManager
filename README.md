@@ -1,6 +1,6 @@
 | Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C6 | ESP32-H2 | ESP32-P4 | ESP32-S2 | ESP32-S3 |
 | ----------------- | ----- | -------- | -------- | -------- | -------- | -------- | -------- | -------- |
-| **Tested On Targets** |  &#10060; Not working due to limited RAM |&#10060;|&#9989;|&#9989;|  &#10060; |  &#10060; | &#10060;|&#10060;|
+| **Tested On Targets** |  &#10060; Not working|&#10060;|&#9989;|&#9989;|  &#10060; |  &#10060; | &#10060;|&#10060;|
 
 # First Stable Version  
 
@@ -42,7 +42,7 @@ After this steps you can just call ´´´wifiManager.h´´´ from any file and c
 Also you can just download whole version and send it to the device.  
 
 ## Minimum Requirements:
-Any esp32 with 4 MB flash. 
+Any esp32 with 4 MB flash and minimum 190 KB SRAM
 
  ## Cases: 
 - If NVS creds found when opening, only opens relevant tasks and not opens or initializes HTTP related tasks. When device disconnects, firstly saved creds cleared out and opens HTTP and related tasks.
