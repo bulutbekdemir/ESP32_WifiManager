@@ -1,3 +1,7 @@
+# This project is currently deprecated. Some bugs will be fixed once the final design is complete—I'm just waiting until I have enough free time.
+
+### I'm keeping a copy of these deprecated projects—maybe I’m just the librarian type. However, I do NOT recommend using this project.
+
 | Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C6 | ESP32-H2 | ESP32-P4 | ESP32-S2 | ESP32-S3 |
 | ----------------- | ----- | -------- | -------- | -------- | -------- | -------- | -------- | -------- |
 | **Tested On Targets** |  &#10060; Not working every ESP32|&#10060;|&#9989;|&#9989;|  &#10060; |  &#10060; | &#10060;|&#10060;|
